@@ -12,6 +12,11 @@ use tracing::{debug, info, warn};
 
 use crate::relay::forwarder::{Forwarder, LocalDelivery};
 
+/// Max user data per relay payload to avoid IP fragmentation.
+/// With relay header (~11B), FEC header (7B), length prefix (2B),
+/// wire header (5B), and auth tag (16B), each shard stays under MTU.
+const MAX_RELAY_DATA: usize = 1400;
+
 pub struct TcpSplitter {
     forwarder: Arc<Forwarder>,
     dest_node: String,
@@ -54,22 +59,24 @@ impl TcpSplitter {
         let (mut reader, mut writer) = stream.into_split();
 
         // Channel for response data coming back from the relay
-        let (resp_tx, mut resp_rx) = mpsc::channel::<Vec<u8>>(256);
+        let (resp_tx, mut resp_rx) = mpsc::channel::<Vec<u8>>(2048);
         self.active_flows.insert(flow_id, resp_tx);
 
         let fwd = Arc::clone(&self.forwarder);
         let dest = self.dest_node.clone();
 
-        // Task: read from client → send through relay
+        // Task: read from client → chunk into MTU-safe payloads → send through relay
         let read_task = tokio::spawn(async move {
             let mut buf = [0u8; 16384];
             loop {
                 match reader.read(&mut buf).await {
                     Ok(0) => break,
                     Ok(n) => {
-                        if let Err(e) = fwd.send_to_node(&dest, flow_id, &buf[..n]).await {
-                            warn!(flow_id, "relay send failed: {e}");
-                            break;
+                        for chunk in buf[..n].chunks(MAX_RELAY_DATA) {
+                            if let Err(e) = fwd.send_to_node(&dest, flow_id, chunk).await {
+                                warn!(flow_id, "relay send failed: {e}");
+                                return;
+                            }
                         }
                     }
                     Err(e) => {
