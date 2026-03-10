@@ -21,6 +21,28 @@ use entrouter_line::relay::fec::FecConfig;
 use entrouter_line::relay::forwarder::{Forwarder, LocalDelivery};
 use entrouter_line::relay::tunnel::{self, ReceivedPacket, Tunnel};
 
+/// Load a TLS server config from PEM cert + key files.
+fn load_tls_config(
+    cert_path: &std::path::Path,
+    key_path: &std::path::Path,
+) -> rustls::ServerConfig {
+    let cert_data = std::fs::read(cert_path).expect("failed to read TLS cert file");
+    let key_data = std::fs::read(key_path).expect("failed to read TLS key file");
+
+    let certs: Vec<_> = rustls_pemfile::certs(&mut &cert_data[..])
+        .collect::<Result<_, _>>()
+        .expect("failed to parse TLS cert PEM");
+
+    let key = rustls_pemfile::private_key(&mut &key_data[..])
+        .expect("failed to parse TLS key PEM")
+        .expect("no private key found in TLS key file");
+
+    rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .expect("invalid TLS cert/key combination")
+}
+
 #[derive(Parser)]
 #[command(name = "entrouter-line")]
 #[command(about = "Zero-loss cross-region packet relay")]
@@ -135,11 +157,24 @@ async fn main() {
     let tcp_listener = TcpListener::bind(config.listen.tcp_addr)
         .await
         .expect("failed to bind TCP listener");
-    let tcp_splitter = Arc::new(TcpSplitter::new(
+    let mut tcp_splitter_inner = TcpSplitter::new(
         Arc::clone(&forwarder),
         config.relay.default_dest.clone(),
-    ));
-    info!(addr = %config.listen.tcp_addr, "TCP edge bound");
+    );
+
+    // Wrap with TLS if configured
+    if let (Some(cert_path), Some(key_path)) =
+        (&config.listen.tls_cert_path, &config.listen.tls_key_path)
+    {
+        let tls_config = load_tls_config(cert_path, key_path);
+        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(tls_config));
+        tcp_splitter_inner = tcp_splitter_inner.with_tls(acceptor);
+        info!(addr = %config.listen.tcp_addr, "TCP edge bound (TLS)");
+    } else {
+        info!(addr = %config.listen.tcp_addr, "TCP edge bound");
+    }
+
+    let tcp_splitter = Arc::new(tcp_splitter_inner);
 
     let tcp_clone = Arc::clone(&tcp_splitter);
     tokio::spawn(async move {

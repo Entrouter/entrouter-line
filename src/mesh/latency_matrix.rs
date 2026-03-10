@@ -134,4 +134,36 @@ mod tests {
         assert!(nodes.contains(&"sgp".to_string()));
         assert!(nodes.contains(&"lon".to_string()));
     }
+
+    #[test]
+    fn jitter_tracking() {
+        let m = LatencyMatrix::new();
+        m.update("a", "b", Duration::from_millis(100));
+        // First update has no jitter (no previous value)
+        let entry = m.entries.get(&("a".into(), "b".into())).unwrap();
+        assert_eq!(entry.jitter, Duration::ZERO);
+        drop(entry);
+
+        // Second update: jitter = abs(200 - 100) = 100ms, smoothed by EWMA
+        m.update("a", "b", Duration::from_millis(200));
+        let entry = m.entries.get(&("a".into(), "b".into())).unwrap();
+        assert!(entry.jitter > Duration::ZERO);
+    }
+
+    #[test]
+    fn multiple_ewma_convergence() {
+        let m = LatencyMatrix::new();
+        // Push many identical samples — should converge
+        for _ in 0..50 {
+            m.update("x", "y", Duration::from_millis(100));
+        }
+        let rtt = m.get_rtt("x", "y").unwrap();
+        assert_eq!(rtt.as_millis(), 100);
+    }
+
+    #[test]
+    fn unknown_path_returns_none() {
+        let m = LatencyMatrix::new();
+        assert!(m.get_rtt("no", "path").is_none());
+    }
 }

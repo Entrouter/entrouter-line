@@ -227,4 +227,54 @@ mod tests {
         assert_eq!(FecConfig::for_loss_rate(0.04).parity_shards, 4);
         assert_eq!(FecConfig::for_loss_rate(0.10).parity_shards, 4);
     }
+
+    #[test]
+    fn adaptive_config_all_boundaries() {
+        // Right at each boundary
+        let t1 = FecConfig::for_loss_rate(0.004);
+        assert_eq!((t1.data_shards, t1.parity_shards), (20, 1));
+
+        let t2 = FecConfig::for_loss_rate(0.005); // crosses into tier 2
+        assert_eq!((t2.data_shards, t2.parity_shards), (10, 2));
+
+        let t3 = FecConfig::for_loss_rate(0.01); // crosses into tier 3
+        assert_eq!((t3.data_shards, t3.parity_shards), (10, 4));
+
+        let t4 = FecConfig::for_loss_rate(0.03); // crosses into tier 4
+        assert_eq!((t4.data_shards, t4.parity_shards), (8, 4));
+
+        let t5 = FecConfig::for_loss_rate(0.05); // crosses into tier 5
+        assert_eq!((t5.data_shards, t5.parity_shards), (6, 4));
+    }
+
+    #[test]
+    fn overhead_calculation() {
+        let c = FecConfig { data_shards: 10, parity_shards: 2 };
+        assert!((c.overhead() - 0.2).abs() < f64::EPSILON);
+
+        let c2 = FecConfig { data_shards: 6, parity_shards: 4 };
+        assert!((c2.overhead() - 4.0 / 6.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn total_shards() {
+        let c = FecConfig { data_shards: 10, parity_shards: 4 };
+        assert_eq!(c.total_shards(), 14);
+    }
+
+    #[test]
+    fn loss_tracker_window_wraparound() {
+        let mut tracker = LossTracker::new(4);
+        // Fill window: [recv, lost, recv, lost] → 50% loss
+        tracker.record(true);
+        tracker.record(false);
+        tracker.record(true);
+        tracker.record(false);
+        assert!((tracker.loss_rate() - 0.5).abs() < f64::EPSILON);
+
+        // Wrap around — overwrite the first two:  [recv, recv, recv, lost] → 25%
+        tracker.record(true);
+        tracker.record(true);
+        assert!((tracker.loss_rate() - 0.25).abs() < f64::EPSILON);
+    }
 }

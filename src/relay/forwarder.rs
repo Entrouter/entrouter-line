@@ -315,4 +315,35 @@ mod tests {
     fn relay_header_too_short() {
         assert!(decode_relay_header(&[0, 1, 2]).is_none());
     }
+
+    #[test]
+    fn relay_header_max_flow_id() {
+        let encoded = encode_relay_header(u32::MAX, "x", b"d");
+        let (flow_id, dest, payload) = decode_relay_header(&encoded).unwrap();
+        assert_eq!(flow_id, u32::MAX);
+        assert_eq!(dest, "x");
+        assert_eq!(payload, b"d");
+    }
+
+    #[test]
+    fn relay_header_binary_payload() {
+        let binary: Vec<u8> = (0..=255).collect();
+        let encoded = encode_relay_header(1, "node", &binary);
+        let (_, _, payload) = decode_relay_header(&encoded).unwrap();
+        assert_eq!(payload, &binary[..]);
+    }
+
+    #[test]
+    fn relay_header_dest_length_mismatch() {
+        // Craft a buffer where dest_len claims 10 but only 3 bytes follow
+        let mut buf = vec![0u8; 5]; // 4 bytes flow_id + 1 byte dest_len
+        buf[4] = 10; // dest_len = 10
+        buf.extend_from_slice(b"abc"); // only 3 bytes
+        assert!(decode_relay_header(&buf).is_none());
+    }
+
+    #[test]
+    fn relay_header_empty_buffer() {
+        assert!(decode_relay_header(&[]).is_none());
+    }
 }

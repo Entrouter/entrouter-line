@@ -5,9 +5,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use dashmap::DashMap;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
+use tokio_rustls::TlsAcceptor;
 use tracing::{debug, info, warn};
 
 use crate::relay::forwarder::{Forwarder, LocalDelivery};
@@ -26,6 +27,8 @@ pub struct TcpSplitter {
     /// flow_id → sender to write response data back to the client
     active_flows: DashMap<u32, mpsc::Sender<Vec<u8>>>,
     next_flow_id: AtomicU32,
+    /// When set, incoming TCP connections are upgraded to TLS before processing.
+    tls_acceptor: Option<TlsAcceptor>,
 }
 
 impl TcpSplitter {
@@ -35,19 +38,37 @@ impl TcpSplitter {
             dest_node,
             active_flows: DashMap::new(),
             next_flow_id: AtomicU32::new(1),
+            tls_acceptor: None,
         }
+    }
+
+    pub fn with_tls(mut self, acceptor: TlsAcceptor) -> Self {
+        self.tls_acceptor = Some(acceptor);
+        self
     }
 
     /// Start accepting TCP connections
     pub async fn listen(self: Arc<Self>, listener: TcpListener) {
-        info!(addr = %listener.local_addr().unwrap(), "TCP edge listening");
+        let tls_label = if self.tls_acceptor.is_some() { " (TLS)" } else { "" };
+        info!(addr = %listener.local_addr().unwrap(), "TCP edge listening{tls_label}");
         loop {
             match listener.accept().await {
                 Ok((stream, addr)) => {
                     debug!(client = %addr, "new TCP connection");
                     let this = Arc::clone(&self);
                     tokio::spawn(async move {
-                        this.handle_connection(stream).await;
+                        if let Some(ref acceptor) = this.tls_acceptor {
+                            match acceptor.accept(stream).await {
+                                Ok(tls_stream) => {
+                                    this.handle_connection(tls_stream).await;
+                                }
+                                Err(e) => {
+                                    warn!(client = %addr, "TLS handshake failed: {e}");
+                                }
+                            }
+                        } else {
+                            this.handle_connection(stream).await;
+                        }
                     });
                 }
                 Err(e) => {
@@ -57,9 +78,12 @@ impl TcpSplitter {
         }
     }
 
-    async fn handle_connection(self: Arc<Self>, stream: tokio::net::TcpStream) {
+    async fn handle_connection<S>(self: Arc<Self>, stream: S)
+    where
+        S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+    {
         let flow_id = self.next_flow_id.fetch_add(1, Ordering::Relaxed);
-        let (mut reader, mut writer) = stream.into_split();
+        let (mut reader, mut writer) = tokio::io::split(stream);
 
         // Channel for response data coming back from the relay
         let (resp_tx, mut resp_rx) = mpsc::channel::<Vec<u8>>(2048);

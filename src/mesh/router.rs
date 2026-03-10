@@ -271,4 +271,30 @@ mod tests {
         let router = MeshRouter::new("syd".to_string(), matrix);
         assert!(router.next_hop("syd").is_none());
     }
+
+    #[test]
+    fn top_paths_returns_all_candidates() {
+        let matrix = Arc::new(LatencyMatrix::new());
+        // Two paths to lon: via sgp (130ms) and direct (200ms)
+        matrix.update("syd", "sgp", Duration::from_millis(50));
+        matrix.update("sgp", "lon", Duration::from_millis(80));
+        matrix.update("syd", "lon", Duration::from_millis(200));
+
+        let router = MeshRouter::new("syd".to_string(), matrix);
+        let paths = router.top_paths("lon", 5);
+        assert!(paths.len() >= 2);
+        // Best path should be first
+        assert_eq!(paths[0].next_hop, "sgp");
+    }
+
+    #[test]
+    fn route_rtt_is_sum_of_hops() {
+        let matrix = Arc::new(LatencyMatrix::new());
+        matrix.update("a", "b", Duration::from_millis(10));
+        matrix.update("b", "c", Duration::from_millis(20));
+
+        let router = MeshRouter::new("a".to_string(), matrix);
+        let route = router.next_hop("c").unwrap();
+        assert_eq!(route.total_rtt, Duration::from_millis(30));
+    }
 }

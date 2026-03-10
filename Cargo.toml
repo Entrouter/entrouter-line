@@ -24,6 +24,8 @@ toml = "0.8"
 axum = "0.8"
 rcgen = "0.13"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+tokio-rustls = "0.26"
+rustls-pemfile = "2"
 base64 = "0.22"
 criterion = { version = "0.5", features = ["html_reports"] }
 

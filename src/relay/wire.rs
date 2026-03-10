@@ -56,4 +56,41 @@ mod tests {
         assert_eq!(seq, 1234u64);
         assert_eq!(len, 500);
     }
+
+    #[test]
+    fn all_packet_types() {
+        for ptype in [PACKET_DATA, PACKET_PARITY, PACKET_PING, PACKET_PONG, PACKET_CONTROL] {
+            let mut buf = [0u8; HEADER_SIZE];
+            encode_header(&mut buf, ptype, 0, 0);
+            let (decoded_type, _, _) = decode_header(&buf);
+            assert_eq!(decoded_type, ptype);
+        }
+    }
+
+    #[test]
+    fn max_seq_and_len() {
+        let mut buf = [0u8; HEADER_SIZE];
+        encode_header(&mut buf, PACKET_DATA, u64::MAX, u16::MAX);
+        let (ptype, seq, len) = decode_header(&buf);
+        assert_eq!(ptype, PACKET_DATA);
+        assert_eq!(seq, u64::MAX);
+        assert_eq!(len, u16::MAX);
+    }
+
+    #[test]
+    fn zero_values() {
+        let mut buf = [0u8; HEADER_SIZE];
+        encode_header(&mut buf, 0, 0, 0);
+        let (ptype, seq, len) = decode_header(&buf);
+        assert_eq!(ptype, 0);
+        assert_eq!(seq, 0);
+        assert_eq!(len, 0);
+    }
+
+    #[test]
+    fn payload_within_mtu() {
+        // Verify MAX_PAYLOAD + HEADER_SIZE + AUTH_TAG_SIZE fits in a reasonable MTU
+        assert!(MAX_PACKET <= 1500);
+        assert_eq!(MAX_PACKET, HEADER_SIZE + MAX_PAYLOAD + AUTH_TAG_SIZE);
+    }
 }

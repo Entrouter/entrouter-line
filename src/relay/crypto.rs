@@ -101,4 +101,56 @@ mod tests {
         let encrypted = crypto.encrypt(1, b"secret");
         assert!(crypto.decrypt(2, &encrypted).is_err());
     }
+
+    #[test]
+    fn empty_payload() {
+        let key = generate_key();
+        let crypto = TunnelCrypto::new(&key);
+        let encrypted = crypto.encrypt(0, b"");
+        let decrypted = crypto.decrypt(0, &encrypted).unwrap();
+        assert!(decrypted.is_empty());
+    }
+
+    #[test]
+    fn large_payload() {
+        let key = generate_key();
+        let crypto = TunnelCrypto::new(&key);
+        let payload = vec![0xABu8; 16_384]; // 16 KB
+        let encrypted = crypto.encrypt(100, &payload);
+        let decrypted = crypto.decrypt(100, &encrypted).unwrap();
+        assert_eq!(decrypted, payload);
+    }
+
+    #[test]
+    fn sequential_nonces() {
+        let key = generate_key();
+        let crypto = TunnelCrypto::new(&key);
+        let payload = b"test";
+
+        // Encrypting the same payload with different seq should produce different ciphertexts
+        let e1 = crypto.encrypt(0, payload);
+        let e2 = crypto.encrypt(1, payload);
+        assert_ne!(e1, e2);
+
+        // Both should decrypt correctly with their own seq
+        assert_eq!(crypto.decrypt(0, &e1).unwrap(), payload);
+        assert_eq!(crypto.decrypt(1, &e2).unwrap(), payload);
+    }
+
+    #[test]
+    fn tampered_ciphertext_fails() {
+        let key = generate_key();
+        let crypto = TunnelCrypto::new(&key);
+        let mut encrypted = crypto.encrypt(1, b"data");
+        // Flip a byte in the ciphertext
+        encrypted[0] ^= 0xFF;
+        assert!(crypto.decrypt(1, &encrypted).is_err());
+    }
+
+    #[test]
+    fn generate_key_is_random() {
+        let k1 = generate_key();
+        let k2 = generate_key();
+        assert_ne!(k1, k2);
+    }
 }
