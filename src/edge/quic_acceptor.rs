@@ -1,8 +1,8 @@
+use std::sync::Arc;
 /// QUIC 0-RTT acceptor for returning users.
 /// Uses Quinn with self-signed certs for development.
 /// Each QUIC bidirectional stream maps to a relay flow.
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
 
 use dashmap::DashMap;
 use tokio::sync::mpsc;
@@ -157,7 +157,7 @@ pub fn make_server_config() -> quinn::ServerConfig {
     tls_config.alpn_protocols = vec![b"entrouter".to_vec()];
     tls_config.max_early_data_size = u32::MAX; // Enable 0-RTT
 
-    let quic_config = quinn::crypto::rustls::QuicServerConfig::try_from(tls_config)
-        .expect("QUIC config failed");
+    let quic_config =
+        quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).expect("QUIC config failed");
     quinn::ServerConfig::with_crypto(Arc::new(quic_config))
 }

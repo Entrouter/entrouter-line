@@ -15,7 +15,6 @@
 /// - 0x03: Probe ping
 /// - 0x04: Probe pong
 /// - 0x05: Control (mesh routing updates)
-
 pub const PACKET_DATA: u8 = 0x01;
 pub const PACKET_PARITY: u8 = 0x02;
 pub const PACKET_PING: u8 = 0x03;

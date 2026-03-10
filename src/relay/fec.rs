@@ -16,11 +16,26 @@ impl FecConfig {
     /// Choose FEC ratio based on measured loss rate (0.0 - 1.0).
     pub fn for_loss_rate(loss: f64) -> Self {
         match loss {
-            l if l < 0.005 => Self { data_shards: 20, parity_shards: 1 },  // ~5% overhead
-            l if l < 0.01  => Self { data_shards: 10, parity_shards: 2 },  // ~20% overhead
-            l if l < 0.03  => Self { data_shards: 10, parity_shards: 4 },  // ~40% overhead
-            l if l < 0.05  => Self { data_shards: 8,  parity_shards: 4 },  // ~50% overhead
-            _              => Self { data_shards: 6,  parity_shards: 4 },  // ~67% overhead (heavy loss)
+            l if l < 0.005 => Self {
+                data_shards: 20,
+                parity_shards: 1,
+            }, // ~5% overhead
+            l if l < 0.01 => Self {
+                data_shards: 10,
+                parity_shards: 2,
+            }, // ~20% overhead
+            l if l < 0.03 => Self {
+                data_shards: 10,
+                parity_shards: 4,
+            }, // ~40% overhead
+            l if l < 0.05 => Self {
+                data_shards: 8,
+                parity_shards: 4,
+            }, // ~50% overhead
+            _ => Self {
+                data_shards: 6,
+                parity_shards: 4,
+            }, // ~67% overhead (heavy loss)
         }
     }
 
@@ -41,8 +56,8 @@ pub struct FecEncoder {
 
 impl FecEncoder {
     pub fn new(config: FecConfig) -> Self {
-        let rs = ReedSolomon::new(config.data_shards, config.parity_shards)
-            .expect("invalid FEC config");
+        let rs =
+            ReedSolomon::new(config.data_shards, config.parity_shards).expect("invalid FEC config");
         Self { rs, config }
     }
 
@@ -60,7 +75,7 @@ impl FecEncoder {
 
     /// Reconstruct missing shards. Shards that are `None` are treated as lost.
     /// Returns Ok(()) if reconstruction succeeds, filling in the missing shards.
-    pub fn reconstruct(&self, shards: &mut Vec<Option<Vec<u8>>>) -> Result<(), FecError> {
+    pub fn reconstruct(&self, shards: &mut [Option<Vec<u8>>]) -> Result<(), FecError> {
         self.rs
             .reconstruct(shards)
             .map_err(|_| FecError::TooManyLost)
@@ -124,12 +139,13 @@ mod tests {
 
     #[test]
     fn encode_decode_no_loss() {
-        let config = FecConfig { data_shards: 4, parity_shards: 2 };
+        let config = FecConfig {
+            data_shards: 4,
+            parity_shards: 2,
+        };
         let enc = FecEncoder::new(config);
 
-        let mut shards: Vec<Vec<u8>> = (0..4)
-            .map(|i| vec![i as u8; 100])
-            .collect();
+        let mut shards: Vec<Vec<u8>> = (0..4).map(|i| vec![i as u8; 100]).collect();
         enc.encode(&mut shards);
 
         assert_eq!(shards.len(), 6);
@@ -140,12 +156,13 @@ mod tests {
 
     #[test]
     fn recover_from_loss() {
-        let config = FecConfig { data_shards: 4, parity_shards: 2 };
+        let config = FecConfig {
+            data_shards: 4,
+            parity_shards: 2,
+        };
         let enc = FecEncoder::new(config);
 
-        let original: Vec<Vec<u8>> = (0..4)
-            .map(|i| vec![i as u8 + 10; 100])
-            .collect();
+        let original: Vec<Vec<u8>> = (0..4).map(|i| vec![i as u8 + 10; 100]).collect();
 
         let mut shards = original.clone();
         enc.encode(&mut shards);
@@ -164,12 +181,13 @@ mod tests {
 
     #[test]
     fn too_many_lost_fails() {
-        let config = FecConfig { data_shards: 4, parity_shards: 2 };
+        let config = FecConfig {
+            data_shards: 4,
+            parity_shards: 2,
+        };
         let enc = FecEncoder::new(config);
 
-        let mut shards: Vec<Vec<u8>> = (0..4)
-            .map(|i| vec![i as u8; 100])
-            .collect();
+        let mut shards: Vec<Vec<u8>> = (0..4).map(|i| vec![i as u8; 100]).collect();
         enc.encode(&mut shards);
 
         // Lose 3 shards (more than parity_shards=2)
@@ -186,7 +204,9 @@ mod tests {
         let mut tracker = LossTracker::new(100);
 
         // No loss → minimal FEC
-        for _ in 0..100 { tracker.record(true); }
+        for _ in 0..100 {
+            tracker.record(true);
+        }
         let config = tracker.recommended_config();
         assert_eq!(config.parity_shards, 1);
 
@@ -208,4 +228,3 @@ mod tests {
         assert_eq!(FecConfig::for_loss_rate(0.10).parity_shards, 4);
     }
 }
-

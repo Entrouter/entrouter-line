@@ -17,11 +17,17 @@ pub struct LatencyMatrix {
     entries: DashMap<(String, String), LatencyEntry>,
 }
 
-impl LatencyMatrix {
-    pub fn new() -> Self {
+impl Default for LatencyMatrix {
+    fn default() -> Self {
         Self {
             entries: DashMap::new(),
         }
+    }
+}
+
+impl LatencyMatrix {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Update RTT for a path using EWMA smoothing (α=0.125)

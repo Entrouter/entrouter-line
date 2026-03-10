@@ -21,7 +21,10 @@ use entrouter_line::relay::fec::{FecConfig, FecEncoder, LossTracker};
 use entrouter_line::relay::wire;
 
 #[derive(Parser)]
-#[command(name = "test-harness", about = "End-to-end tunnel test with simulated loss")]
+#[command(
+    name = "test-harness",
+    about = "End-to-end tunnel test with simulated loss"
+)]
 struct Args {
     /// Simulated packet loss rate (0.0 - 1.0)
     #[arg(long, default_value = "0.05")]
@@ -108,7 +111,7 @@ async fn main() {
 
         // Create FEC encoder
         let encoder = FecEncoder::new(fec_config);
-        let shard_size = (data.len() + fec_config.data_shards - 1) / fec_config.data_shards;
+        let shard_size = data.len().div_ceil(fec_config.data_shards);
 
         // Split into data shards
         let mut shards: Vec<Vec<u8>> = data
@@ -156,7 +159,12 @@ async fn main() {
     let term_payload = b"DONE";
     let ciphertext = crypto.encrypt(seq, term_payload);
     let mut frame = vec![0u8; wire::HEADER_SIZE + ciphertext.len()];
-    wire::encode_header(&mut frame, wire::PACKET_CONTROL, seq, ciphertext.len() as u16);
+    wire::encode_header(
+        &mut frame,
+        wire::PACKET_CONTROL,
+        seq,
+        ciphertext.len() as u16,
+    );
     frame[wire::HEADER_SIZE..].copy_from_slice(&ciphertext);
     sender_sock.send_to(&frame, proxy_addr).await.unwrap();
 
@@ -196,15 +204,24 @@ async fn main() {
         total_shards_lost as f64 / total_shards_sent as f64 * 100.0
     );
     println!("Data transferred:  {total_data} bytes");
-    println!("Send time:         {:.2}ms", send_elapsed.as_secs_f64() * 1000.0);
-    println!("Total time:        {:.2}ms", total_elapsed.as_secs_f64() * 1000.0);
+    println!(
+        "Send time:         {:.2}ms",
+        send_elapsed.as_secs_f64() * 1000.0
+    );
+    println!(
+        "Total time:        {:.2}ms",
+        total_elapsed.as_secs_f64() * 1000.0
+    );
     println!(
         "Throughput:        {:.2} MB/s",
         total_data as f64 / total_elapsed.as_secs_f64() / 1_000_000.0
     );
 
     if failed == 0 {
-        println!("\n*** ZERO-LOSS: All blocks recovered despite {:.1}% packet loss ***", loss_rate * 100.0);
+        println!(
+            "\n*** ZERO-LOSS: All blocks recovered despite {:.1}% packet loss ***",
+            loss_rate * 100.0
+        );
     } else {
         println!("\n!!! {failed} blocks could NOT be recovered — FEC config may need tuning !!!");
     }
@@ -249,7 +266,7 @@ async fn run_lossy_proxy(socket: Arc<UdpSocket>, target: SocketAddr, loss_rate: 
 
         let _ = socket.send_to(&buf[..len], target).await;
 
-        if total % 5000 == 0 {
+        if total.is_multiple_of(5000) {
             tracing::debug!(
                 total,
                 dropped,
@@ -328,11 +345,14 @@ async fn run_receiver(
         }
 
         // Parse block_idx and shard_idx
-        let block_idx = u32::from_be_bytes([plaintext[0], plaintext[1], plaintext[2], plaintext[3]]);
+        let block_idx =
+            u32::from_be_bytes([plaintext[0], plaintext[1], plaintext[2], plaintext[3]]);
         let shard_idx = u16::from_be_bytes([plaintext[4], plaintext[5]]) as usize;
         let shard_data = plaintext[6..].to_vec();
 
-        let block = blocks.entry(block_idx).or_insert_with(|| vec![None; total_shards]);
+        let block = blocks
+            .entry(block_idx)
+            .or_insert_with(|| vec![None; total_shards]);
         if shard_idx < total_shards {
             block[shard_idx] = Some(shard_data);
         }
@@ -340,7 +360,9 @@ async fn run_receiver(
 
     // Reconstruct all blocks
     for block_idx in 0..expected_blocks as u32 {
-        let block = blocks.entry(block_idx).or_insert_with(|| vec![None; total_shards]);
+        let block = blocks
+            .entry(block_idx)
+            .or_insert_with(|| vec![None; total_shards]);
         let shards_lost = block.iter().filter(|s| s.is_none()).count();
 
         let encoder = FecEncoder::new(fec_config);

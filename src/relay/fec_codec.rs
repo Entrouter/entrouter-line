@@ -52,7 +52,13 @@ fn decode_shard_header(buf: &[u8]) -> Option<(u16, u8, u8, u8, u16)> {
     let data_shards = buf[3];
     let parity_shards = buf[4];
     let original_len = u16::from_le_bytes([buf[5], buf[6]]);
-    Some((block_id, shard_idx, data_shards, parity_shards, original_len))
+    Some((
+        block_id,
+        shard_idx,
+        data_shards,
+        parity_shards,
+        original_len,
+    ))
 }
 
 // --- FEC Sender ---
@@ -245,15 +251,14 @@ impl PendingBlock {
 }
 
 /// Collects incoming shards by block_id, reconstructs complete blocks.
+#[derive(Default)]
 pub struct FecReceiver {
     blocks: HashMap<u16, PendingBlock>,
 }
 
 impl FecReceiver {
     pub fn new() -> Self {
-        Self {
-            blocks: HashMap::new(),
-        }
+        Self::default()
     }
 
     /// Process an incoming shard payload (FEC header + shard data).
@@ -271,10 +276,8 @@ impl FecReceiver {
 
         let can_reconstruct = block.insert(shard_idx, shard_data);
 
-        if can_reconstruct {
-            if let Some(mut block) = self.blocks.remove(&block_id) {
-                return block.reconstruct();
-            }
+        if can_reconstruct && let Some(mut block) = self.blocks.remove(&block_id) {
+            return block.reconstruct();
         }
 
         None
@@ -286,7 +289,11 @@ impl FecReceiver {
         self.blocks.retain(|id, block| {
             let age = now.duration_since(block.created_at).as_millis();
             if age >= max_age_ms {
-                debug!(block_id = id, received = block.received, "expiring incomplete FEC block");
+                debug!(
+                    block_id = id,
+                    received = block.received,
+                    "expiring incomplete FEC block"
+                );
             }
             age < max_age_ms
         });

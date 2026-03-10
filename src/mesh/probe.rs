@@ -6,10 +6,10 @@ use crate::relay::tunnel::Tunnel;
 use crate::relay::wire;
 
 use dashmap::DashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
-use tokio::time::{interval, Duration};
+use tokio::time::{Duration, interval};
 use tracing::{debug, warn};
 
 pub struct Prober {

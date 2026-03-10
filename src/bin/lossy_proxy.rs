@@ -11,10 +11,13 @@ use rand::Rng as _;
 use rand::SeedableRng;
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 #[derive(Parser)]
-#[command(name = "lossy-proxy", about = "UDP proxy that drops packets to test FEC")]
+#[command(
+    name = "lossy-proxy",
+    about = "UDP proxy that drops packets to test FEC"
+)]
 struct Args {
     /// Address to listen on (receives from sender)
     #[arg(long, default_value = "127.0.0.1:9000")]
@@ -100,7 +103,7 @@ async fn main() {
 
         let _ = socket.send_to(&buf[..len], dest).await;
 
-        if total % 10000 == 0 {
+        if total.is_multiple_of(10000) {
             let actual_rate = dropped as f64 / total as f64;
             info!(
                 total,

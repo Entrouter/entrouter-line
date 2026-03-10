@@ -1,12 +1,12 @@
+use dashmap::DashMap;
 /// Pre-warmed encrypted UDP tunnel between PoPs.
 /// Combines wire framing, ChaCha20-Poly1305 encryption, and adaptive FEC.
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Arc;
-use dashmap::DashMap;
+use std::sync::atomic::{AtomicU16, Ordering};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 use super::crypto::TunnelCrypto;
 use super::fec::{FecConfig, FecEncoder, LossTracker};
@@ -60,7 +60,7 @@ impl Tunnel {
     /// Splits `data` into `data_shards` chunks, generates parity, sends all.
     pub async fn send_with_fec(&self, data: &[u8], fec_config: FecConfig) -> std::io::Result<()> {
         let encoder = FecEncoder::new(fec_config);
-        let shard_size = (data.len() + fec_config.data_shards - 1) / fec_config.data_shards;
+        let shard_size = data.len().div_ceil(fec_config.data_shards);
 
         // Split data into shards, pad last shard
         let mut shards: Vec<Vec<u8>> = data
@@ -226,4 +226,3 @@ pub async fn receive_loop_multi(
         }
     }
 }
-

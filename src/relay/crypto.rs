@@ -1,8 +1,8 @@
 /// ChaCha20-Poly1305 symmetric encryption for tunnel packets.
 /// Pre-shared key, nonce derived from sequence number + direction.
 use chacha20poly1305::{
-    aead::{Aead, KeyInit},
     ChaCha20Poly1305, Nonce,
+    aead::{Aead, KeyInit},
 };
 
 pub const KEY_SIZE: usize = 32;

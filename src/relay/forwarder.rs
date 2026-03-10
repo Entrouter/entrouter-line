@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use dashmap::DashMap;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tracing::{debug, info, warn};
 
 use crate::mesh::probe::Prober;
@@ -85,10 +85,10 @@ impl Forwarder {
         match packet.packet_type {
             wire::PACKET_PING => {
                 let pong = Prober::create_pong(&packet.payload);
-                if let Some(tunnel) = self.tunnels.get(from_peer) {
-                    if let Err(e) = tunnel.send(wire::PACKET_PONG, &pong).await {
-                        warn!(peer = %from_peer, "pong send failed: {e}");
-                    }
+                if let Some(tunnel) = self.tunnels.get(from_peer)
+                    && let Err(e) = tunnel.send(wire::PACKET_PONG, &pong).await
+                {
+                    warn!(peer = %from_peer, "pong send failed: {e}");
                 }
             }
             wire::PACKET_PONG => {
@@ -154,7 +154,11 @@ impl Forwarder {
 
     /// Forward a relay payload to the next hop toward destination.
     /// Buffers through FEC encoder — shards spawned as fire-and-forget when block is full.
-    async fn forward_to(&self, dest_node: &str, relay_payload: &[u8]) -> Result<(), ForwarderError> {
+    async fn forward_to(
+        &self,
+        dest_node: &str,
+        relay_payload: &[u8],
+    ) -> Result<(), ForwarderError> {
         let route = self
             .router
             .next_hop(dest_node)
@@ -223,15 +227,15 @@ impl Forwarder {
         for entry in self.fec_senders.iter() {
             let peer_id = entry.key().clone();
             let mut sender = entry.value().lock().await;
-            if let Some(shards) = sender.flush_partial() {
-                if let Some(tunnel) = self.tunnels.get(&peer_id) {
-                    let tun = Arc::clone(&*tunnel);
-                    tokio::spawn(async move {
-                        for (ptype, shard) in shards {
-                            let _ = tun.send(ptype, &shard).await;
-                        }
-                    });
-                }
+            if let Some(shards) = sender.flush_partial()
+                && let Some(tunnel) = self.tunnels.get(&peer_id)
+            {
+                let tun = Arc::clone(&*tunnel);
+                tokio::spawn(async move {
+                    for (ptype, shard) in shards {
+                        let _ = tun.send(ptype, &shard).await;
+                    }
+                });
             }
         }
         // Expire old incomplete receive blocks

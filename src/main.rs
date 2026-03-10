@@ -61,18 +61,13 @@ async fn main() {
         sock.bind(&config.listen.relay_addr.into())
             .expect("failed to bind UDP socket");
         let std_sock: std::net::UdpSocket = sock.into();
-        Arc::new(
-            UdpSocket::from_std(std_sock).expect("failed to create tokio UdpSocket"),
-        )
+        Arc::new(UdpSocket::from_std(std_sock).expect("failed to create tokio UdpSocket"))
     };
     info!(addr = %config.listen.relay_addr, "UDP relay bound (4MB buffers)");
 
     // --- Core components ---
     let matrix = Arc::new(LatencyMatrix::new());
-    let router = Arc::new(MeshRouter::new(
-        config.node_id.clone(),
-        Arc::clone(&matrix),
-    ));
+    let router = Arc::new(MeshRouter::new(config.node_id.clone(), Arc::clone(&matrix)));
     let prober = Arc::new(Prober::new(config.node_id.clone(), Arc::clone(&matrix)));
 
     // Local delivery channel (forwarder → edge)

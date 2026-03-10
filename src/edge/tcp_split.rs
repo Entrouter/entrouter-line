@@ -1,8 +1,8 @@
+use std::sync::Arc;
 /// TCP connection splitter at the edge.
 /// ACKs user immediately (low local RTT), buffers and relays over the fast tunnel.
 /// Each TCP connection maps to a relay flow_id for end-to-end tracking.
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
 
 use dashmap::DashMap;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

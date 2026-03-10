@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
 
 use entrouter_line::relay::crypto::{self, TunnelCrypto};
 use entrouter_line::relay::fec::{FecConfig, FecEncoder};
@@ -36,7 +36,10 @@ fn bench_decrypt_1400(c: &mut Criterion) {
 }
 
 fn bench_fec_encode(c: &mut Criterion) {
-    let config = FecConfig { data_shards: 6, parity_shards: 4 };
+    let config = FecConfig {
+        data_shards: 6,
+        parity_shards: 4,
+    };
     let encoder = FecEncoder::new(config);
     let shard_size = 700; // Typical shard size for 4KB block
 
@@ -53,7 +56,10 @@ fn bench_fec_encode(c: &mut Criterion) {
 }
 
 fn bench_fec_reconstruct(c: &mut Criterion) {
-    let config = FecConfig { data_shards: 6, parity_shards: 4 };
+    let config = FecConfig {
+        data_shards: 6,
+        parity_shards: 4,
+    };
     let encoder = FecEncoder::new(config);
     let shard_size = 700;
 
@@ -96,7 +102,10 @@ fn bench_wire_framing(c: &mut Criterion) {
 fn bench_full_pipeline(c: &mut Criterion) {
     let key = crypto::generate_key();
     let crypto = TunnelCrypto::new(&key);
-    let config = FecConfig { data_shards: 6, parity_shards: 4 };
+    let config = FecConfig {
+        data_shards: 6,
+        parity_shards: 4,
+    };
     let encoder = FecEncoder::new(config);
     let data = vec![0xCDu8; 4200]; // 4.2KB block
 
@@ -105,11 +114,14 @@ fn bench_full_pipeline(c: &mut Criterion) {
     group.bench_function("fec_encode+encrypt_4200B", |b| {
         b.iter(|| {
             let shard_size = (data.len() + config.data_shards - 1) / config.data_shards;
-            let mut shards: Vec<Vec<u8>> = data.chunks(shard_size).map(|c| {
-                let mut s = c.to_vec();
-                s.resize(shard_size, 0);
-                s
-            }).collect();
+            let mut shards: Vec<Vec<u8>> = data
+                .chunks(shard_size)
+                .map(|c| {
+                    let mut s = c.to_vec();
+                    s.resize(shard_size, 0);
+                    s
+                })
+                .collect();
             while shards.len() < config.data_shards {
                 shards.push(vec![0u8; shard_size]);
             }
