@@ -24,11 +24,11 @@ default_dest = "us-east-01"
 [[peers]]
 node_id = "sgp-01"
 region = "sgp"
-addr = "139.180.100.1:4433"
+addr = "198.51.100.1:4433"
 shared_key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 [[peers]]
 node_id = "us-east-01"
 region = "us-east"
-addr = "45.76.50.1:4433"
+addr = "203.0.113.1:4433"
 shared_key = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
