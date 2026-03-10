@@ -108,9 +108,39 @@ The admin API is available at `http://127.0.0.1:9090`:
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    Client([Client])
+
+    subgraph edge_a["Edge PoP A"]
+        QA[QUIC 0-RTT\nTermination]
+        TCP_A[TCP Split]
+    end
+
+    subgraph relay["Encrypted Relay Mesh"]
+        FEC_E[FEC Encode\nReed-Solomon]
+        ENC[ChaCha20-Poly1305\nEncrypt]
+        UDP((UDP Tunnel))
+        DEC[Decrypt]
+        FEC_D[FEC Decode\n+ Loss Recovery]
+    end
+
+    subgraph edge_b["Edge PoP B"]
+        TCP_B[TCP Split]
+        QB[QUIC 0-RTT\nTermination]
+    end
+
+    Origin([Origin])
+
+    Client --> QA --> TCP_A --> FEC_E --> ENC --> UDP --> DEC --> FEC_D --> TCP_B --> QB --> Origin
+
+    style relay fill:#1a1a2e,stroke:#e94560,stroke-width:2px,color:#eee
+    style edge_a fill:#0f3460,stroke:#533483,stroke-width:2px,color:#eee
+    style edge_b fill:#0f3460,stroke:#533483,stroke-width:2px,color:#eee
+    style UDP fill:#e94560,stroke:#e94560,color:#fff
 ```
-User → [QUIC 0-RTT] → Edge PoP → [UDP + FEC + ChaCha20 Tunnel] → Edge PoP → Origin
-```
+
+Latency-mesh routing (Dijkstra on EWMA probe data) dynamically selects the fastest path between PoPs — not the BGP default.
 
 ## Project Structure
 
