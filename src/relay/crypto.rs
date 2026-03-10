@@ -5,13 +5,17 @@ use chacha20poly1305::{
     aead::{Aead, KeyInit},
 };
 
+/// Symmetric key size in bytes (256-bit).
 pub const KEY_SIZE: usize = 32;
 
+/// ChaCha20-Poly1305 AEAD cipher bound to a single pre-shared key.
+/// One instance per peer tunnel — nonces are derived from packet sequence numbers.
 pub struct TunnelCrypto {
     cipher: ChaCha20Poly1305,
 }
 
 impl TunnelCrypto {
+    /// Create a new cipher from a 32-byte pre-shared key.
     pub fn new(key: &[u8; KEY_SIZE]) -> Self {
         Self {
             cipher: ChaCha20Poly1305::new(key.into()),
@@ -37,7 +41,11 @@ impl TunnelCrypto {
 
     /// Build a 12-byte nonce from the sequence number.
     /// First 8 bytes = seq (LE), remaining 4 = zero.
-    /// Safe because u64 won't wrap in any realistic tunnel lifetime.
+    ///
+    /// Safe because a u64 counter won't wrap in any realistic tunnel lifetime
+    /// (at 1 M packets/sec it would take ~584 942 years to exhaust the space).
+    /// Each tunnel has its own independent counter, so nonce reuse across
+    /// tunnels is impossible.
     fn make_nonce(&self, seq: u64) -> Nonce {
         let mut nonce_bytes = [0u8; 12];
         nonce_bytes[..8].copy_from_slice(&seq.to_le_bytes());

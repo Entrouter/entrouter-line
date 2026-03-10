@@ -32,6 +32,7 @@ pub struct TcpSplitter {
 }
 
 impl TcpSplitter {
+    /// Create a new TCP splitter forwarding to `dest_node` via the given forwarder.
     pub fn new(forwarder: Arc<Forwarder>, dest_node: String) -> Self {
         Self {
             forwarder,
@@ -42,6 +43,7 @@ impl TcpSplitter {
         }
     }
 
+    /// Enable TLS for incoming connections using the given acceptor.
     pub fn with_tls(mut self, acceptor: TlsAcceptor) -> Self {
         self.tls_acceptor = Some(acceptor);
         self
@@ -50,7 +52,11 @@ impl TcpSplitter {
     /// Start accepting TCP connections
     pub async fn listen(self: Arc<Self>, listener: TcpListener) {
         let tls_label = if self.tls_acceptor.is_some() { " (TLS)" } else { "" };
-        info!(addr = %listener.local_addr().unwrap(), "TCP edge listening{tls_label}");
+        let addr = listener
+            .local_addr()
+            .map(|a| a.to_string())
+            .unwrap_or_else(|_| "unknown".into());
+        info!(%addr, "TCP edge listening{tls_label}");
         loop {
             match listener.accept().await {
                 Ok((stream, addr)) => {
@@ -148,6 +154,7 @@ impl TcpSplitter {
         }
     }
 
+    /// Number of currently active TCP flows.
     pub fn active_flow_count(&self) -> usize {
         self.active_flows.len()
     }

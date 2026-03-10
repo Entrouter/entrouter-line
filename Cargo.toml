@@ -29,6 +29,10 @@ rustls-pemfile = "2"
 base64 = "0.22"
 criterion = { version = "0.5", features = ["html_reports"] }
 
+[dev-dependencies]
+tower = "0.5"
+http-body-util = "0.1"
+
 [[bin]]
 name = "lossy-proxy"
 path = "src/bin/lossy_proxy.rs"

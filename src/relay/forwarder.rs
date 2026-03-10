@@ -57,6 +57,7 @@ pub struct Forwarder {
 }
 
 impl Forwarder {
+    /// Create a new forwarder attached to the given router and probe engine.
     pub fn new(
         node_id: String,
         router: Arc<MeshRouter>,
@@ -76,6 +77,7 @@ impl Forwarder {
         }
     }
 
+    /// Register a tunnel for the given peer and initialise its FEC state.
     pub fn add_tunnel(&self, peer_id: String, tunnel: Arc<Tunnel>) {
         self.fec_senders
             .entry(peer_id.clone())
@@ -251,10 +253,12 @@ impl Forwarder {
         }
     }
 
+    /// This node's identifier.
     pub fn node_id(&self) -> &str {
         &self.node_id
     }
 
+    /// Number of connected peer tunnels.
     pub fn peer_count(&self) -> usize {
         self.tunnels.len()
     }
@@ -263,6 +267,7 @@ impl Forwarder {
 // --- Relay header encoding/decoding ---
 // Layout: [4 bytes flow_id LE] [1 byte dest_len] [N bytes dest_node UTF-8] [rest: data]
 
+/// Encode a relay header: `[4B flow_id LE][1B dest_len][dest_node UTF-8][data]`.
 pub fn encode_relay_header(flow_id: u32, dest_node: &str, data: &[u8]) -> Vec<u8> {
     let dest_bytes = dest_node.as_bytes();
     let dest_len = dest_bytes.len().min(255) as u8;
@@ -274,6 +279,7 @@ pub fn encode_relay_header(flow_id: u32, dest_node: &str, data: &[u8]) -> Vec<u8
     buf
 }
 
+/// Decode a relay header. Returns `(flow_id, dest_node, data)` or `None`.
 pub fn decode_relay_header(buf: &[u8]) -> Option<(u32, &str, &[u8])> {
     if buf.len() < 5 {
         return None;

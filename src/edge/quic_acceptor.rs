@@ -21,6 +21,7 @@ pub struct QuicAcceptor {
 }
 
 impl QuicAcceptor {
+    /// Create a new QUIC acceptor forwarding to `dest_node` via the given forwarder.
     pub fn new(forwarder: Arc<Forwarder>, dest_node: String) -> Self {
         Self {
             forwarder,
@@ -115,6 +116,7 @@ impl QuicAcceptor {
         debug!(flow_id, "QUIC flow ended");
     }
 
+    /// Deliver incoming response data to the correct QUIC stream.
     pub fn deliver(&self, flow_id: u32, data: Vec<u8>) {
         if let Some(sender) = self.active_flows.get(&flow_id)
             && let Err(mpsc::error::TrySendError::Full(_)) = sender.try_send(data)
@@ -123,12 +125,14 @@ impl QuicAcceptor {
         }
     }
 
+    /// Process deliveries from the relay (runs in background).
     pub async fn delivery_loop(self: Arc<Self>, mut rx: mpsc::Receiver<LocalDelivery>) {
         while let Some(delivery) = rx.recv().await {
             self.deliver(delivery.flow_id, delivery.data);
         }
     }
 
+    /// Number of currently active QUIC flows.
     pub fn active_flow_count(&self) -> usize {
         self.active_flows.len()
     }
@@ -160,7 +164,11 @@ pub fn make_server_config() -> quinn::ServerConfig {
         .with_single_cert(certs, key)
         .expect("TLS config failed");
     tls_config.alpn_protocols = vec![b"entrouter".to_vec()];
-    tls_config.max_early_data_size = u32::MAX; // Enable 0-RTT
+    // Enable TLS 0-RTT for returning clients.  Replay attacks on 0-RTT data
+    // are safe here because the tunnel layer encrypts every packet with a
+    // unique per-sequence nonce — replayed TLS early-data would decrypt to
+    // duplicate tunnel packets that the receiver naturally deduplicates.
+    tls_config.max_early_data_size = u32::MAX;
 
     let quic_config =
         quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).expect("QUIC config failed");

@@ -40,6 +40,7 @@ impl PartialOrd for DijkstraState {
 }
 
 impl MeshRouter {
+    /// Create a router for `local_node` using the given latency matrix.
     pub fn new(local_node: String, matrix: Arc<LatencyMatrix>) -> Self {
         Self { local_node, matrix }
     }
@@ -220,6 +221,7 @@ impl MeshRouter {
         total
     }
 
+    /// This router's local node identifier.
     pub fn local_node(&self) -> &str {
         &self.local_node
     }

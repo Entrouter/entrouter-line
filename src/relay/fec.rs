@@ -49,12 +49,14 @@ impl FecConfig {
     }
 }
 
+/// Reed-Solomon encoder/decoder for a fixed shard configuration.
 pub struct FecEncoder {
     rs: ReedSolomon,
     pub config: FecConfig,
 }
 
 impl FecEncoder {
+    /// Create an encoder for the given data/parity shard counts.
     pub fn new(config: FecConfig) -> Self {
         let rs =
             ReedSolomon::new(config.data_shards, config.parity_shards).expect("invalid FEC config");

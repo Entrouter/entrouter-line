@@ -12,6 +12,9 @@ use std::time::Instant;
 use tokio::time::{Duration, interval};
 use tracing::{debug, warn};
 
+/// Continuous latency prober for all PoP peers.
+/// Sends PING packets through tunnels, computes RTT from PONG replies,
+/// and feeds measurements into the shared [`LatencyMatrix`].
 pub struct Prober {
     node_id: String,
     matrix: Arc<LatencyMatrix>,
@@ -21,6 +24,7 @@ pub struct Prober {
 }
 
 impl Prober {
+    /// Create a new prober for the given local node.
     pub fn new(node_id: String, matrix: Arc<LatencyMatrix>) -> Self {
         Self {
             node_id,
@@ -85,10 +89,12 @@ impl Prober {
         }
     }
 
+    /// Reference to the underlying latency matrix.
     pub fn matrix(&self) -> &Arc<LatencyMatrix> {
         &self.matrix
     }
 
+    /// Number of probes awaiting a PONG reply.
     pub fn pending_count(&self) -> usize {
         self.pending.len()
     }

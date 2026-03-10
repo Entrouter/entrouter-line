@@ -29,6 +29,7 @@ impl Default for LatencyMatrix {
 }
 
 impl LatencyMatrix {
+    /// Create an empty latency matrix.
     pub fn new() -> Self {
         Self::default()
     }

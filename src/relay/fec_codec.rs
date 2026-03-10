@@ -24,6 +24,7 @@ use tracing::debug;
 use crate::relay::fec::{FecConfig, FecEncoder};
 use crate::relay::wire;
 
+/// Size of the per-shard FEC header prepended before encryption (7 bytes).
 pub const SHARD_HEADER_SIZE: usize = 7;
 
 // --- Shard header encode/decode ---
@@ -72,6 +73,7 @@ pub struct FecSender {
 }
 
 impl FecSender {
+    /// Create a new FEC sender with the given shard configuration.
     pub fn new(config: FecConfig) -> Self {
         Self {
             config,
@@ -102,6 +104,7 @@ impl FecSender {
         Some(self.flush())
     }
 
+    /// Number of payloads buffered in the current (incomplete) block.
     pub fn buffered_count(&self) -> usize {
         self.buffer.len()
     }

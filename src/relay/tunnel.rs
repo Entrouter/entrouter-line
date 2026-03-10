@@ -29,6 +29,7 @@ pub struct ReceivedPacket {
 }
 
 impl Tunnel {
+    /// Create a tunnel bound to a UDP socket and peer address, using the given key.
     pub fn new(socket: Arc<UdpSocket>, peer_addr: SocketAddr, key: &[u8; 32]) -> Self {
         Self {
             peer_addr,

@@ -16,6 +16,7 @@ use crate::edge::tcp_split::TcpSplitter;
 use crate::mesh::latency_matrix::LatencyMatrix;
 use crate::relay::forwarder::Forwarder;
 
+/// Shared state for all admin endpoints.
 pub struct AdminState {
     pub node_id: String,
     pub region: String,
@@ -26,6 +27,7 @@ pub struct AdminState {
     pub admin_token: Option<String>,
 }
 
+/// Build the admin [`Router`] with health and status endpoints.
 pub fn admin_router(state: Arc<AdminState>) -> Router {
     let health_route = Router::new().route("/health", get(health));
 
@@ -92,4 +94,105 @@ async fn status(State(state): State<Arc<AdminState>>) -> Json<Value> {
         "paths": state.matrix.path_count(),
         "latencies": latencies,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    use crate::mesh::latency_matrix::LatencyMatrix;
+    use crate::mesh::probe::Prober;
+    use crate::mesh::router::MeshRouter;
+    use crate::relay::fec::FecConfig;
+    use crate::relay::forwarder::Forwarder;
+
+    fn test_state(token: Option<&str>) -> Arc<AdminState> {
+        let matrix = Arc::new(LatencyMatrix::new());
+        let router = Arc::new(MeshRouter::new("test-01".into(), Arc::clone(&matrix)));
+        let prober = Arc::new(Prober::new("test-01".into(), Arc::clone(&matrix)));
+        let (tx, _rx) = tokio::sync::mpsc::channel(1);
+        let fwd = Arc::new(Forwarder::new(
+            "test-01".into(),
+            router,
+            prober,
+            tx,
+            FecConfig { data_shards: 10, parity_shards: 4 },
+        ));
+        let tcp = Arc::new(TcpSplitter::new(Arc::clone(&fwd), "peer".into()));
+        let quic = Arc::new(QuicAcceptor::new(Arc::clone(&fwd), "peer".into()));
+
+        Arc::new(AdminState {
+            node_id: "test-01".into(),
+            region: "test".into(),
+            matrix,
+            forwarder: fwd,
+            tcp_splitter: tcp,
+            quic_acceptor: quic,
+            admin_token: token.map(String::from),
+        })
+    }
+
+    #[tokio::test]
+    async fn health_returns_ok() {
+        let app = admin_router(test_state(None));
+        let req = Request::get("/health").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"ok");
+    }
+
+    #[tokio::test]
+    async fn status_without_token_is_public() {
+        let app = admin_router(test_state(None));
+        let req = Request::get("/status").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn status_rejects_missing_token() {
+        let app = admin_router(test_state(Some("secret")));
+        let req = Request::get("/status").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn status_rejects_wrong_token() {
+        let app = admin_router(test_state(Some("secret")));
+        let req = Request::get("/status")
+            .header("authorization", "Bearer wrong")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn status_accepts_correct_token() {
+        let app = admin_router(test_state(Some("secret")));
+        let req = Request::get("/status")
+            .header("authorization", "Bearer secret")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn status_body_contains_node_id() {
+        let app = admin_router(test_state(None));
+        let req = Request::get("/status").body(Body::empty()).unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        let body = resp.into_body().collect().await.unwrap().to_bytes();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["node_id"], "test-01");
+        assert_eq!(json["region"], "test");
+        assert_eq!(json["peers"], 0);
+    }
 }

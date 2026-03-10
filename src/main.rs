@@ -25,22 +25,21 @@ use entrouter_line::relay::tunnel::{self, ReceivedPacket, Tunnel};
 fn load_tls_config(
     cert_path: &std::path::Path,
     key_path: &std::path::Path,
-) -> rustls::ServerConfig {
-    let cert_data = std::fs::read(cert_path).expect("failed to read TLS cert file");
-    let key_data = std::fs::read(key_path).expect("failed to read TLS key file");
+) -> Result<rustls::ServerConfig, Box<dyn std::error::Error>> {
+    let cert_data = std::fs::read(cert_path)?;
+    let key_data = std::fs::read(key_path)?;
 
     let certs: Vec<_> = rustls_pemfile::certs(&mut &cert_data[..])
-        .collect::<Result<_, _>>()
-        .expect("failed to parse TLS cert PEM");
+        .collect::<Result<_, _>>()?;
 
-    let key = rustls_pemfile::private_key(&mut &key_data[..])
-        .expect("failed to parse TLS key PEM")
-        .expect("no private key found in TLS key file");
+    let key = rustls_pemfile::private_key(&mut &key_data[..])?
+        .ok_or("no private key found in TLS key file")?;
 
-    rustls::ServerConfig::builder()
+    let config = rustls::ServerConfig::builder()
         .with_no_client_auth()
-        .with_single_cert(certs, key)
-        .expect("invalid TLS cert/key combination")
+        .with_single_cert(certs, key)?;
+
+    Ok(config)
 }
 
 #[derive(Parser)]
@@ -58,32 +57,30 @@ async fn main() {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
+    if let Err(e) = run().await {
+        error!("{e}");
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     info!("entrouter-line starting");
 
     // Load config
-    let config = match Config::load(&cli.config) {
-        Ok(c) => c,
-        Err(e) => {
-            error!("failed to load config: {e}");
-            std::process::exit(1);
-        }
-    };
+    let config = Config::load(&cli.config)?;
 
     info!(node = %config.node_id, region = %config.region, "config loaded");
 
     // --- Bind UDP socket for tunnel relay traffic (large buffers for burst absorption) ---
     let udp_socket = {
-        let sock = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
-            .expect("failed to create UDP socket");
+        let sock = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         sock.set_recv_buffer_size(4 * 1024 * 1024).ok();
         sock.set_send_buffer_size(4 * 1024 * 1024).ok();
-        sock.set_nonblocking(true)
-            .expect("failed to set nonblocking");
-        sock.bind(&config.listen.relay_addr.into())
-            .expect("failed to bind UDP socket");
+        sock.set_nonblocking(true)?;
+        sock.bind(&config.listen.relay_addr.into())?;
         let std_sock: std::net::UdpSocket = sock.into();
-        Arc::new(UdpSocket::from_std(std_sock).expect("failed to create tokio UdpSocket"))
+        Arc::new(UdpSocket::from_std(std_sock)?)
     };
     info!(addr = %config.listen.relay_addr, "UDP relay bound (4MB buffers)");
 
@@ -116,7 +113,7 @@ async fn main() {
         Arc::new(DashMap::new());
 
     for peer in &config.peers {
-        let key = peer.decode_key().expect("config already validated");
+        let key = peer.decode_key()?;
 
         // Tunnel for sending
         let tunnel = Arc::new(Tunnel::new(Arc::clone(&udp_socket), peer.addr, &key));
@@ -154,9 +151,7 @@ async fn main() {
     });
 
     // --- TCP edge ---
-    let tcp_listener = TcpListener::bind(config.listen.tcp_addr)
-        .await
-        .expect("failed to bind TCP listener");
+    let tcp_listener = TcpListener::bind(config.listen.tcp_addr).await?;
     let mut tcp_splitter_inner = TcpSplitter::new(
         Arc::clone(&forwarder),
         config.relay.default_dest.clone(),
@@ -166,7 +161,7 @@ async fn main() {
     if let (Some(cert_path), Some(key_path)) =
         (&config.listen.tls_cert_path, &config.listen.tls_key_path)
     {
-        let tls_config = load_tls_config(cert_path, key_path);
+        let tls_config = load_tls_config(cert_path, key_path)?;
         let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(tls_config));
         tcp_splitter_inner = tcp_splitter_inner.with_tls(acceptor);
         info!(addr = %config.listen.tcp_addr, "TCP edge bound (TLS)");
@@ -183,8 +178,7 @@ async fn main() {
 
     // --- QUIC edge ---
     let quic_server_config = quic_acceptor::make_server_config();
-    let quic_endpoint = quinn::Endpoint::server(quic_server_config, config.listen.quic_addr)
-        .expect("failed to create QUIC endpoint");
+    let quic_endpoint = quinn::Endpoint::server(quic_server_config, config.listen.quic_addr)?;
     let quic_acceptor = Arc::new(QuicAcceptor::new(
         Arc::clone(&forwarder),
         config.relay.default_dest.clone(),
@@ -222,9 +216,7 @@ async fn main() {
         admin_token: config.listen.admin_token.clone(),
     });
     let admin_app = admin::admin_router(admin_state);
-    let admin_listener = TcpListener::bind(config.listen.admin_addr)
-        .await
-        .expect("failed to bind admin listener");
+    let admin_listener = TcpListener::bind(config.listen.admin_addr).await?;
     info!(addr = %config.listen.admin_addr, "admin HTTP bound");
 
     tokio::spawn(async move {
@@ -241,4 +233,6 @@ async fn main() {
 
     tokio::signal::ctrl_c().await.ok();
     info!("shutting down");
+
+    Ok(())
 }
