@@ -3,7 +3,7 @@
 /// Frame layout (all fields little-endian):
 /// ```text
 /// [1 byte]  packet_type
-/// [2 bytes] sequence number
+/// [8 bytes] sequence number (u64)
 /// [2 bytes] payload length
 /// [N bytes] payload (encrypted)
 /// [16 bytes] auth tag (Poly1305)
@@ -21,23 +21,25 @@ pub const PACKET_PING: u8 = 0x03;
 pub const PACKET_PONG: u8 = 0x04;
 pub const PACKET_CONTROL: u8 = 0x05;
 
-pub const HEADER_SIZE: usize = 5; // type(1) + seq(2) + len(2)
+pub const HEADER_SIZE: usize = 11; // type(1) + seq(8) + len(2)
 pub const AUTH_TAG_SIZE: usize = 16;
 pub const MAX_PAYLOAD: usize = 1400; // safe for MTU 1500
 pub const MAX_PACKET: usize = HEADER_SIZE + MAX_PAYLOAD + AUTH_TAG_SIZE;
 
-/// Encode a frame header into a buffer. Returns bytes written (always 5).
-pub fn encode_header(buf: &mut [u8], packet_type: u8, seq: u16, payload_len: u16) {
+/// Encode a frame header into a buffer. Returns bytes written (always 11).
+pub fn encode_header(buf: &mut [u8], packet_type: u8, seq: u64, payload_len: u16) {
     buf[0] = packet_type;
-    buf[1..3].copy_from_slice(&seq.to_le_bytes());
-    buf[3..5].copy_from_slice(&payload_len.to_le_bytes());
+    buf[1..9].copy_from_slice(&seq.to_le_bytes());
+    buf[9..11].copy_from_slice(&payload_len.to_le_bytes());
 }
 
 /// Decode a frame header from a buffer.
-pub fn decode_header(buf: &[u8]) -> (u8, u16, u16) {
+pub fn decode_header(buf: &[u8]) -> (u8, u64, u16) {
     let packet_type = buf[0];
-    let seq = u16::from_le_bytes([buf[1], buf[2]]);
-    let payload_len = u16::from_le_bytes([buf[3], buf[4]]);
+    let seq = u64::from_le_bytes([
+        buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8],
+    ]);
+    let payload_len = u16::from_le_bytes([buf[9], buf[10]]);
     (packet_type, seq, payload_len)
 }
 
@@ -48,10 +50,10 @@ mod tests {
     #[test]
     fn roundtrip_header() {
         let mut buf = [0u8; HEADER_SIZE];
-        encode_header(&mut buf, PACKET_DATA, 1234, 500);
+        encode_header(&mut buf, PACKET_DATA, 1234u64, 500);
         let (ptype, seq, len) = decode_header(&buf);
         assert_eq!(ptype, PACKET_DATA);
-        assert_eq!(seq, 1234);
+        assert_eq!(seq, 1234u64);
         assert_eq!(len, 500);
     }
 }

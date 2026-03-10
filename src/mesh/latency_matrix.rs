@@ -5,6 +5,7 @@ use dashmap::DashMap;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
+/// Live latency measurement between a pair of nodes.
 #[derive(Debug, Clone)]
 pub struct LatencyEntry {
     pub smoothed_rtt: Duration,
@@ -13,6 +14,8 @@ pub struct LatencyEntry {
     pub samples: u64,
 }
 
+/// Thread-safe latency matrix tracking RTT between all node pairs.
+/// Updated by the probe module and consumed by the mesh router.
 pub struct LatencyMatrix {
     entries: DashMap<(String, String), LatencyEntry>,
 }

@@ -102,7 +102,7 @@ async fn main() {
     // --- Sender: send FEC-encoded blocks ---
     let start = Instant::now();
     let crypto = TunnelCrypto::new(&key);
-    let mut seq: u16 = 0;
+    let mut seq: u64 = 0;
     let mut rng = rand::thread_rng();
 
     for block_idx in 0..num_blocks {
@@ -288,7 +288,7 @@ async fn run_receiver(
     let crypto = TunnelCrypto::new(&key);
     let mut buf = [0u8; 2048];
     let mut loss_tracker = LossTracker::new(1000);
-    let mut expected_seq: u16 = 0;
+    let mut expected_seq: u64 = 0;
 
     // Collect shards per block: block_idx → (shard_idx → shard_data)
     let mut blocks: std::collections::HashMap<u32, Vec<Option<Vec<u8>>>> =

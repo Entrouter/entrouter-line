@@ -6,11 +6,14 @@ use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 
+/// Shortest-path mesh router using live latency data.
+/// Runs Dijkstra on the latency matrix to find the fastest route.
 pub struct MeshRouter {
     local_node: String,
     matrix: Arc<LatencyMatrix>,
 }
 
+/// A computed route to a destination node.
 #[derive(Debug, Clone)]
 pub struct RouteEntry {
     pub next_hop: String,

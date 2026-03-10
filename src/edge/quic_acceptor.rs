@@ -10,6 +10,9 @@ use tracing::{debug, info, warn};
 
 use crate::relay::forwarder::{Forwarder, LocalDelivery};
 
+/// QUIC 0-RTT edge acceptor.
+/// Maps each QUIC bidirectional stream to a relay flow,
+/// enabling fast reconnection for returning users.
 pub struct QuicAcceptor {
     forwarder: Arc<Forwarder>,
     dest_node: String,
@@ -113,8 +116,10 @@ impl QuicAcceptor {
     }
 
     pub fn deliver(&self, flow_id: u32, data: Vec<u8>) {
-        if let Some(sender) = self.active_flows.get(&flow_id) {
-            let _ = sender.try_send(data);
+        if let Some(sender) = self.active_flows.get(&flow_id)
+            && let Err(mpsc::error::TrySendError::Full(_)) = sender.try_send(data)
+        {
+            warn!(flow_id, "QUIC deliver dropped: channel full");
         }
     }
 

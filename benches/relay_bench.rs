@@ -129,9 +129,9 @@ fn bench_full_pipeline(c: &mut Criterion) {
 
             // Encrypt each shard
             for (i, shard) in shards.iter().enumerate() {
-                let ct = crypto.encrypt(i as u16, shard);
+                let ct = crypto.encrypt(i as u64, shard);
                 let mut frame = vec![0u8; wire::HEADER_SIZE + ct.len()];
-                wire::encode_header(&mut frame, wire::PACKET_DATA, i as u16, ct.len() as u16);
+                wire::encode_header(&mut frame, wire::PACKET_DATA, i as u64, ct.len() as u16);
                 frame[wire::HEADER_SIZE..].copy_from_slice(&ct);
                 black_box(&frame);
             }

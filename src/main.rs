@@ -94,7 +94,7 @@ async fn main() {
         Arc::new(DashMap::new());
 
     for peer in &config.peers {
-        let key = peer.decode_key();
+        let key = peer.decode_key().expect("config already validated");
 
         // Tunnel for sending
         let tunnel = Arc::new(Tunnel::new(Arc::clone(&udp_socket), peer.addr, &key));
@@ -184,6 +184,7 @@ async fn main() {
         forwarder: Arc::clone(&forwarder),
         tcp_splitter: Arc::clone(&tcp_splitter),
         quic_acceptor: Arc::clone(&quic_acceptor),
+        admin_token: config.listen.admin_token.clone(),
     });
     let admin_app = admin::admin_router(admin_state);
     let admin_listener = TcpListener::bind(config.listen.admin_addr)

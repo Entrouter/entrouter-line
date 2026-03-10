@@ -6,6 +6,8 @@ relay_addr = "0.0.0.0:4433"
 tcp_addr = "0.0.0.0:8443"
 quic_addr = "0.0.0.0:4434"
 admin_addr = "127.0.0.1:9090"
+# Optional: require bearer token for /status endpoint
+# admin_token = "your-secret-token-here"
 
 [mesh]
 probe_interval_ms = 500

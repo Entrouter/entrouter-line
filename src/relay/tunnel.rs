@@ -3,7 +3,7 @@ use dashmap::DashMap;
 /// Combines wire framing, ChaCha20-Poly1305 encryption, and adaptive FEC.
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
@@ -17,13 +17,13 @@ pub struct Tunnel {
     pub peer_addr: SocketAddr,
     socket: Arc<UdpSocket>,
     crypto: TunnelCrypto,
-    tx_seq: AtomicU16,
+    tx_seq: AtomicU64,
 }
 
 /// Received and decrypted payload from the tunnel.
 pub struct ReceivedPacket {
     pub packet_type: u8,
-    pub seq: u16,
+    pub seq: u64,
     pub payload: Vec<u8>,
     pub from: SocketAddr,
 }
@@ -34,7 +34,7 @@ impl Tunnel {
             peer_addr,
             socket,
             crypto: TunnelCrypto::new(key),
-            tx_seq: AtomicU16::new(0),
+            tx_seq: AtomicU64::new(0),
         }
     }
 
@@ -102,7 +102,7 @@ pub async fn receive_loop(
     mut loss_tracker: LossTracker,
 ) {
     let mut buf = [0u8; wire::MAX_PACKET];
-    let mut expected_seq: u16 = 0;
+    let mut expected_seq: u64 = 0;
 
     loop {
         let (len, from) = match socket.recv_from(&mut buf).await {

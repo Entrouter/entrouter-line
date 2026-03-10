@@ -15,10 +15,13 @@ use crate::relay::fec_codec::{FecReceiver, FecSender};
 use crate::relay::tunnel::{ReceivedPacket, Tunnel};
 use crate::relay::wire;
 
-/// Traffic delivered to the local edge (this node is the destination)
+/// Traffic delivered to the local edge (this node is the destination).
 pub struct LocalDelivery {
+    /// Flow identifier (TCP < 1M, QUIC >= 1M)
     pub flow_id: u32,
+    /// Application payload
     pub data: Vec<u8>,
+    /// Node that sent the packet
     pub source_node: String,
 }
 
@@ -39,6 +42,9 @@ impl std::fmt::Display for ForwarderError {
     }
 }
 
+/// Central packet routing engine.
+/// Routes incoming tunnel traffic to its destination — either forwarding
+/// to the next hop or delivering locally to the edge (TCP/QUIC).
 pub struct Forwarder {
     node_id: String,
     router: Arc<MeshRouter>,

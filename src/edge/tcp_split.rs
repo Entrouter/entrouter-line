@@ -17,6 +17,9 @@ use crate::relay::forwarder::{Forwarder, LocalDelivery};
 /// wire header (5B), and auth tag (16B), each shard stays under MTU.
 const MAX_RELAY_DATA: usize = 1400;
 
+/// TCP edge splitter.
+/// Accepts user TCP connections, ACKs locally for low latency,
+/// then relays traffic over the encrypted tunnel mesh.
 pub struct TcpSplitter {
     forwarder: Arc<Forwarder>,
     dest_node: String,
@@ -107,8 +110,10 @@ impl TcpSplitter {
 
     /// Deliver incoming response data to the correct TCP client
     pub fn deliver(&self, flow_id: u32, data: Vec<u8>) {
-        if let Some(sender) = self.active_flows.get(&flow_id) {
-            let _ = sender.try_send(data);
+        if let Some(sender) = self.active_flows.get(&flow_id)
+            && let Err(mpsc::error::TrySendError::Full(_)) = sender.try_send(data)
+        {
+            warn!(flow_id, "TCP deliver dropped: channel full");
         }
     }
 

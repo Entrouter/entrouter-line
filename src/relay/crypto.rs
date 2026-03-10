@@ -19,16 +19,16 @@ impl TunnelCrypto {
     }
 
     /// Encrypt payload in-place. Returns ciphertext + 16-byte auth tag.
-    /// Nonce is built from the sequence number to ensure uniqueness.
-    pub fn encrypt(&self, seq: u16, payload: &[u8]) -> Vec<u8> {
+    /// Nonce is built from the 64-bit sequence number to ensure uniqueness.
+    pub fn encrypt(&self, seq: u64, payload: &[u8]) -> Vec<u8> {
         let nonce = self.make_nonce(seq);
         self.cipher
             .encrypt(&nonce, payload)
-            .expect("encryption should not fail")
+            .expect("ChaCha20-Poly1305 encrypt with valid key cannot fail")
     }
 
     /// Decrypt ciphertext (includes auth tag). Returns plaintext or error.
-    pub fn decrypt(&self, seq: u16, ciphertext: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    pub fn decrypt(&self, seq: u64, ciphertext: &[u8]) -> Result<Vec<u8>, CryptoError> {
         let nonce = self.make_nonce(seq);
         self.cipher
             .decrypt(&nonce, ciphertext)
@@ -36,11 +36,11 @@ impl TunnelCrypto {
     }
 
     /// Build a 12-byte nonce from the sequence number.
-    /// First 2 bytes = seq (LE), remaining 10 = zero.
-    /// Safe because each seq is used only once per key per direction.
-    fn make_nonce(&self, seq: u16) -> Nonce {
+    /// First 8 bytes = seq (LE), remaining 4 = zero.
+    /// Safe because u64 won't wrap in any realistic tunnel lifetime.
+    fn make_nonce(&self, seq: u64) -> Nonce {
         let mut nonce_bytes = [0u8; 12];
-        nonce_bytes[..2].copy_from_slice(&seq.to_le_bytes());
+        nonce_bytes[..8].copy_from_slice(&seq.to_le_bytes());
         Nonce::from(nonce_bytes)
     }
 }
@@ -75,10 +75,10 @@ mod tests {
         let crypto = TunnelCrypto::new(&key);
         let payload = b"hello entrouter-line";
 
-        let encrypted = crypto.encrypt(42, payload);
+        let encrypted = crypto.encrypt(42u64, payload);
         assert_ne!(&encrypted[..payload.len()], payload);
 
-        let decrypted = crypto.decrypt(42, &encrypted).unwrap();
+        let decrypted = crypto.decrypt(42u64, &encrypted).unwrap();
         assert_eq!(decrypted, payload);
     }
 

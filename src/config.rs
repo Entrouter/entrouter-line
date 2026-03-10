@@ -29,6 +29,8 @@ pub struct ListenConfig {
     pub quic_addr: SocketAddr,
     /// Admin HTTP address
     pub admin_addr: SocketAddr,
+    /// Optional bearer token for admin /status endpoint
+    pub admin_token: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -95,14 +97,27 @@ impl Config {
 }
 
 impl PeerConfig {
-    /// Decode the shared key from base64
-    pub fn decode_key(&self) -> [u8; 32] {
+    /// Decode the shared key from base64.
+    /// Returns an error if the key is invalid — callers should validate config first.
+    pub fn decode_key(&self) -> Result<[u8; 32], ConfigError> {
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(&self.shared_key)
-            .expect("invalid base64 key");
+            .map_err(|_| {
+                ConfigError::Validation(format!(
+                    "invalid base64 shared_key for peer {}",
+                    self.node_id
+                ))
+            })?;
         let mut key = [0u8; 32];
+        if bytes.len() != 32 {
+            return Err(ConfigError::Validation(format!(
+                "shared_key for peer {} must be 32 bytes (got {})",
+                self.node_id,
+                bytes.len()
+            )));
+        }
         key.copy_from_slice(&bytes);
-        key
+        Ok(key)
     }
 }
 
