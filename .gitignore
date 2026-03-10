@@ -2,3 +2,20 @@
 *.swp
 *.swo
 .env
+
+# Real node configs (contain IPs, keys, tokens)
+config.toml
+!config.example.toml
+
+# TLS certificates and private keys
+*.pem
+*.key
+*.crt
+*.p12
+
+# Editor / OS
+.idea/
+.vscode/
+*.bak
+.DS_Store
+Thumbs.db

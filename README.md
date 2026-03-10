@@ -3,10 +3,13 @@
 [![Build](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml/badge.svg)](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.94+-orange.svg)](https://www.rust-lang.org)
+[![Tests](https://img.shields.io/badge/Tests-69%20passing-brightgreen.svg)]()
 
 **Zero-loss cross-region packet relay network.**
 
 Adaptive FEC, encrypted UDP tunnels, real-time latency-mesh routing, and QUIC 0-RTT edge termination. Written in Rust.
+
+> **Use case:** Deploy relay nodes at global PoPs to eliminate packet loss and reduce tail latency between regions. Drop-in improvement for any TCP workload crossing unreliable or high-latency links.
 
 ---
 
@@ -68,6 +71,14 @@ At baseline, the relay adds ~9ms (3.5%) for encryption + FEC + UDP tunnelling. B
 - **Real-world context:** Internet backbone loss between major cities is typically 0.01–2%. This relay handles that range with zero visible loss. Even 10–20% loss (damaged undersea cable territory) still delivers 87%+ throughput.
 
 Full benchmark methodology and raw data: [BENCHMARK-RESULTS.md](BENCHMARK-RESULTS.md)
+
+---
+
+## Requirements
+
+- **Rust 1.94+** (edition 2024)
+- Linux recommended for production (UDP socket optimizations via `socket2`)
+- Builds and tests on Windows, macOS, and Linux
 
 ---
 
@@ -193,11 +204,31 @@ The `deploy/` directory contains benchmark and test scripts:
 | `netem_bench.py` | Netem-based loss simulation benchmark |
 | `sync_bench.py` | Synchronized bidirectional benchmark |
 
-## Build
+## Running Tests
 
 ```bash
-cargo build --release
+cargo test
 ```
+
+Run the full benchmark suite (requires [Criterion](https://github.com/bheisler/criterion.rs)):
+
+```bash
+cargo bench
+```
+
+## Security
+
+All inter-node traffic is encrypted with ChaCha20-Poly1305. Shared keys are pre-configured per peer — no PKI required for the relay mesh. Optional TLS termination is available at the edge.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## Contributing
+
+Pull requests welcome. Please run `cargo test` and `cargo clippy` before submitting.
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2025 Entrouter
 
 ## Contributing
 

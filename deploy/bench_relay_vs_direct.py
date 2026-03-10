@@ -52,7 +52,7 @@ def restart_relays(node_a, node_b):
     for c in [node_a, node_b]:
         run(c, "pkill -9 -f 'entrouter-line --config' 2>/dev/null; true")
     time.sleep(2)
-    for c in [lon, syd]:
+    for c in [node_a, node_b]:
         c.exec_command(
             "cd /opt/entrouter-line && RUST_LOG=info "
             "nohup ./target/release/entrouter-line --config config.toml "
