@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Coordinate benchmark across London and Sydney VPS.
+Coordinate benchmark across two remote VPS nodes.
 Launches both sides simultaneously via SSH, collects results.
 
 Usage:
@@ -13,8 +13,8 @@ import threading
 import time
 import sys
 
-LON_HOST = "root@YOUR_LONDON_IP"
-SYD_HOST = "root@YOUR_SYDNEY_IP"
+NODE_A_HOST = "root@YOUR_NODE_A_IP"
+NODE_B_HOST = "root@YOUR_NODE_B_IP"
 BENCH_CMD = "python3 /tmp/sync_bench.py"
 
 def run_ssh(host, role, rate_mbps, duration, chunk_size, results, key):
@@ -43,28 +43,28 @@ def main():
     results = {}
 
     # Start both sides simultaneously
-    t_lon = threading.Thread(target=run_ssh, args=(LON_HOST, "sender", args.rate_mbps, args.duration, args.chunk_size, results, "london"))
-    t_syd = threading.Thread(target=run_ssh, args=(SYD_HOST, "receiver", args.rate_mbps, args.duration, args.chunk_size, results, "sydney"))
+    t_a = threading.Thread(target=run_ssh, args=(NODE_A_HOST, "sender", args.rate_mbps, args.duration, args.chunk_size, results, "node_a"))
+    t_b = threading.Thread(target=run_ssh, args=(NODE_B_HOST, "receiver", args.rate_mbps, args.duration, args.chunk_size, results, "node_b"))
 
-    t_lon.start()
-    t_syd.start()
+    t_a.start()
+    t_b.start()
 
-    t_lon.join()
-    t_syd.join()
+    t_a.join()
+    t_b.join()
 
-    print("\n--- LONDON (sender) ---")
-    if "london" in results:
-        print(results["london"]["stdout"])
-        if results["london"]["stderr"]:
-            print(f"STDERR: {results['london']['stderr']}")
+    print("\n--- NODE A (sender) ---")
+    if "node_a" in results:
+        print(results["node_a"]["stdout"])
+        if results["node_a"]["stderr"]:
+            print(f"STDERR: {results['node_a']['stderr']}")
     else:
         print("NO RESULT")
 
-    print("\n--- SYDNEY (receiver) ---")
-    if "sydney" in results:
-        print(results["sydney"]["stdout"])
-        if results["sydney"]["stderr"]:
-            print(f"STDERR: {results['sydney']['stderr']}")
+    print("\n--- NODE B (receiver) ---")
+    if "node_b" in results:
+        print(results["node_b"]["stdout"])
+        if results["node_b"]["stderr"]:
+            print(f"STDERR: {results['node_b']['stderr']}")
     else:
         print("NO RESULT")
 

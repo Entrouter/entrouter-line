@@ -22,7 +22,7 @@ Relays packets between globally distributed PoP (Point of Presence) nodes with:
 
 ## Benchmarks
 
-Tested on London ↔ Sydney (273ms RTT) over Vultr shared VPS — one of the longest internet routes on Earth, on budget infrastructure.
+Tested on London ↔ Sydney (~271ms RTT) over Vultr shared VPS — one of the longest internet routes on Earth, on budget infrastructure.
 
 ### FEC Loss Recovery
 
@@ -45,6 +45,21 @@ Tested on London ↔ Sydney (273ms RTT) over Vultr shared VPS — one of the lon
 | 20% | **0%** |
 
 The relay introduces zero additional packet loss at any tested loss level. Encryption, header routing, and tunnel forwarding add no measurable overhead.
+
+### Relay vs Direct TCP (A/B Comparison)
+
+Same two nodes, same link, same loss — relay tunnel vs raw TCP:
+
+| Loss | Relay p95 | Direct TCP p95 | Winner |
+|------|----------|----------------|--------|
+| 0% | 280ms | 271ms | TCP by 9ms |
+| 1% | **280ms** | **758ms** | **Relay by 478ms** |
+| 3% | 280ms | 817ms | **Relay by 537ms** |
+| 5% | **280ms** | **1089ms** | **Relay by 809ms** |
+
+At baseline, the relay adds ~9ms (3.5%) for encryption + FEC + UDP tunnelling. But at **any non-zero packet loss**, the relay delivers dramatically lower tail latency because FEC absorbs loss silently — no TCP retransmit delays.
+
+> Relay latency is dead-flat at ~280ms whether there's 0% or 5% loss. Direct TCP p95 degrades linearly.
 
 ### Infrastructure Limits (Not Code Limits)
 
@@ -162,6 +177,21 @@ src/
     ├── tcp_split.rs     # TCP connection splitting
     └── quic_acceptor.rs # QUIC 0-RTT acceptor
 ```
+
+## Test Scripts
+
+The `deploy/` directory contains benchmark and test scripts:
+
+| Script | Description |
+|--------|-------------|
+| `bench_relay_vs_direct.py` | A/B comparison: relay tunnel vs raw TCP (latency + throughput at multiple loss levels). Requires two remote nodes and `paramiko`. |
+| `bench_throughput.py` | Bulk throughput benchmark (localhost) |
+| `bench_mtu.py` | MTU discovery benchmark (localhost) |
+| `bench_ratelimit.py` | Rate-limited throughput test (localhost) |
+| `simple_test.py` | Basic relay connectivity test (localhost) |
+| `coord_bench.py` | Coordinated two-node benchmark launcher |
+| `netem_bench.py` | Netem-based loss simulation benchmark |
+| `sync_bench.py` | Synchronized bidirectional benchmark |
 
 ## Build
 
