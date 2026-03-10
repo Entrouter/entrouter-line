@@ -1,8 +1,9 @@
 # Entrouter Line
 
 [![Build](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml/badge.svg)](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/entrouter-line.svg)](https://crates.io/crates/entrouter-line)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.94+-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/Rust-1.87+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/Tests-69%20passing-brightgreen.svg)]()
 
 **Zero-loss cross-region packet relay network.**
@@ -76,21 +77,42 @@ Full benchmark methodology and raw data: [BENCHMARK-RESULTS.md](BENCHMARK-RESULT
 
 ## Requirements
 
-- **Rust 1.94+** (edition 2024)
+- **Rust 1.87+** (edition 2024)
 - Linux recommended for production (UDP socket optimizations via `socket2`)
 - Builds and tests on Windows, macOS, and Linux
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Build
+### Pre-built binaries
+
+Download from [GitHub Releases](https://github.com/Entrouter/entrouter-line/releases) — available for Linux (amd64/arm64), macOS (amd64/arm64), and Windows.
+
+### Cargo
+
+```bash
+cargo install entrouter-line
+```
+
+### Docker
+
+```bash
+docker build -t entrouter-line .
+docker run -v ./config.toml:/etc/entrouter/config.toml \
+  -p 4433:4433/udp -p 8443:8443 -p 4434:4434/udp -p 9090:9090 \
+  entrouter-line
+```
+
+### Build from source
 
 ```bash
 cargo build --release
 ```
 
-### 2. Configure
+## Quick Start
+
+### 1. Configure
 
 Copy the example config and edit for your nodes:
 
@@ -120,10 +142,10 @@ Generate a shared key:
 openssl rand -base64 32
 ```
 
-### 3. Run
+### 2. Run
 
 ```bash
-./target/release/entrouter-line --config config.toml
+entrouter-line --config config.toml
 ```
 
 The admin API is available at `http://127.0.0.1:9090`:
@@ -230,14 +252,4 @@ Pull requests welcome. Please run `cargo test` and `cargo clippy` before submitt
 
 [MIT](LICENSE) — Copyright (c) 2025 Entrouter
 
-## Contributing
 
-Issues and pull requests welcome. If you're reporting a bug, include:
-- Your config (redact keys)
-- OS and Rust version
-- Steps to reproduce
-- Relevant logs
-
-## License
-
-MIT — see [LICENSE](LICENSE)
