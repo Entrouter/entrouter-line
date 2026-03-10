@@ -50,7 +50,7 @@ async fn main() {
     let num_blocks = args.blocks;
     let block_size = args.block_size;
 
-    println!("=== Entrouter Line — End-to-End Test ===");
+    println!("=== Entrouter Line - End-to-End Test ===");
     println!("Loss rate: {:.1}%", loss_rate * 100.0);
     println!("Blocks: {num_blocks}");
     println!("Block size: {block_size} bytes");
@@ -223,7 +223,7 @@ async fn main() {
             loss_rate * 100.0
         );
     } else {
-        println!("\n!!! {failed} blocks could NOT be recovered — FEC config may need tuning !!!");
+        println!("\n!!! {failed} blocks could NOT be recovered - FEC config may need tuning !!!");
     }
 }
 
@@ -249,7 +249,7 @@ async fn run_lossy_proxy(socket: Arc<UdpSocket>, target: SocketAddr, loss_rate: 
         total += 1;
 
         if from == target {
-            // Return traffic — forward without loss
+            // Return traffic - forward without loss
             if let Some(addr) = sender_addr {
                 let _ = socket.send_to(&buf[..len], addr).await;
             }
@@ -307,7 +307,7 @@ async fn run_receiver(
         let (len, _from) = match recv {
             Ok(Ok(r)) => r,
             Ok(Err(_)) => continue,
-            Err(_) => break, // Timeout — assume done
+            Err(_) => break, // Timeout - assume done
         };
 
         if len < wire::HEADER_SIZE {

@@ -5,7 +5,7 @@
 /// recovery shards. Any `data_shards` of the total can reconstruct the block.
 use reed_solomon_erasure::galois_8::ReedSolomon;
 
-/// FEC configuration — adapts parity ratio based on observed loss.
+/// FEC configuration - adapts parity ratio based on observed loss.
 #[derive(Debug, Clone, Copy)]
 pub struct FecConfig {
     pub data_shards: usize,
@@ -283,7 +283,7 @@ mod tests {
         tracker.record(false);
         assert!((tracker.loss_rate() - 0.5).abs() < f64::EPSILON);
 
-        // Wrap around — overwrite the first two:  [recv, recv, recv, lost] → 25%
+        // Wrap around - overwrite the first two:  [recv, recv, recv, lost] → 25%
         tracker.record(true);
         tracker.record(true);
         assert!((tracker.loss_rate() - 0.25).abs() < f64::EPSILON);

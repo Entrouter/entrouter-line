@@ -1,4 +1,4 @@
-/// FEC codec — block-level Forward Error Correction for the relay tunnel.
+/// FEC codec - block-level Forward Error Correction for the relay tunnel.
 ///
 /// Sits between the forwarder and tunnel to transparently add FEC protection.
 ///
@@ -455,7 +455,7 @@ mod tests {
             }
         }
 
-        // Drop 3 shards — more than parity_shards(2), can't reconstruct
+        // Drop 3 shards - more than parity_shards(2), can't reconstruct
         let surviving: Vec<_> = all_shards.iter().skip(3).cloned().collect();
         assert_eq!(surviving.len(), 3);
 

@@ -34,7 +34,7 @@ impl Prober {
         }
     }
 
-    /// Handle an incoming PONG packet — compute RTT and update latency matrix
+    /// Handle an incoming PONG packet - compute RTT and update latency matrix
     pub fn handle_pong(&self, _from_peer: &str, payload: &[u8]) {
         if payload.len() < 4 {
             return;

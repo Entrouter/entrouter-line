@@ -95,7 +95,7 @@ impl Tunnel {
     }
 }
 
-/// Receive loop — listens on the socket and decrypts incoming packets.
+/// Receive loop - listens on the socket and decrypts incoming packets.
 pub async fn receive_loop(
     socket: Arc<UdpSocket>,
     crypto: TunnelCrypto,
@@ -170,7 +170,7 @@ pub async fn receive_loop(
     }
 }
 
-/// Multiplexed receive loop — handles encrypted packets from all peers on a shared socket.
+/// Multiplexed receive loop - handles encrypted packets from all peers on a shared socket.
 /// Identifies sender by source address, decrypts with the corresponding key.
 pub async fn receive_loop_multi(
     socket: Arc<UdpSocket>,

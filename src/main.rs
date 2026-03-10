@@ -225,7 +225,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         node = %config.node_id,
         region = %config.region,
         peers = config.peers.len(),
-        "entrouter-line ready — all systems go"
+        "entrouter-line ready - all systems go"
     );
 
     tokio::signal::ctrl_c().await.ok();

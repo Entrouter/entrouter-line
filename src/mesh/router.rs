@@ -1,5 +1,5 @@
 /// Real-time shortest-path routing over the latency mesh.
-/// Dijkstra on live latency matrix — picks fastest path, re-routes on degradation.
+/// Dijkstra on live latency matrix - picks fastest path, re-routes on degradation.
 use super::latency_matrix::LatencyMatrix;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};

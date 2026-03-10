@@ -118,7 +118,7 @@ impl Config {
 
 impl PeerConfig {
     /// Decode the shared key from base64.
-    /// Returns an error if the key is invalid — callers should validate config first.
+    /// Returns an error if the key is invalid - callers should validate config first.
     pub fn decode_key(&self) -> Result<[u8; 32], ConfigError> {
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(&self.shared_key)

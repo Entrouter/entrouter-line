@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn multiple_ewma_convergence() {
         let m = LatencyMatrix::new();
-        // Push many identical samples — should converge
+        // Push many identical samples - should converge
         for _ in 0..50 {
             m.update("x", "y", Duration::from_millis(100));
         }

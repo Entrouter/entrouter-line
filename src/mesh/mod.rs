@@ -1,4 +1,4 @@
-//! Mesh layer — latency probing and shortest-path routing.
+//! Mesh layer - latency probing and shortest-path routing.
 //!
 //! Continuously probes RTT between all PoP pairs, smooths measurements
 //! with EWMA, and runs Dijkstra to find the fastest path for each

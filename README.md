@@ -18,15 +18,15 @@ Adaptive FEC, encrypted UDP tunnels, real-time latency-mesh routing, and QUIC 0-
 
 Relays packets between globally distributed PoP (Point of Presence) nodes with:
 
-- **Zero packet loss up to 10% link loss** — adaptive Reed-Solomon FEC absorbs all loss with zero throughput impact
-- **Zero relay overhead** — measured loss exactly matches simulated network loss, the relay adds nothing
+- **Zero packet loss up to 10% link loss** - adaptive Reed-Solomon FEC absorbs all loss with zero throughput impact
+- **Zero relay overhead** - measured loss exactly matches simulated network loss, the relay adds nothing
 - **Optimal routing** via real-time latency mesh with Dijkstra shortest-path (not BGP)
 - **Instant connections** via QUIC 0-RTT + TCP splitting at edge
 - **Always-encrypted** tunnels with ChaCha20-Poly1305
 
 ## Benchmarks
 
-Tested on London ↔ Sydney (~271ms RTT) over Vultr shared VPS — one of the longest internet routes on Earth, on budget infrastructure.
+Tested on London ↔ Sydney (~271ms RTT) over Vultr shared VPS - one of the longest internet routes on Earth, on budget infrastructure.
 
 ### FEC Loss Recovery
 
@@ -52,7 +52,7 @@ The relay introduces zero additional packet loss at any tested loss level. Encry
 
 ### Relay vs Direct TCP (A/B Comparison)
 
-Same two nodes, same link, same loss — relay tunnel vs raw TCP:
+Same two nodes, same link, same loss - relay tunnel vs raw TCP:
 
 | Loss | Relay p95 | Direct TCP p95 | Winner |
 |------|----------|----------------|--------|
@@ -61,7 +61,7 @@ Same two nodes, same link, same loss — relay tunnel vs raw TCP:
 | 3% | 280ms | 817ms | **Relay by 537ms** |
 | 5% | **280ms** | **1089ms** | **Relay by 809ms** |
 
-At baseline, the relay adds ~9ms (3.5%) for encryption + FEC + UDP tunnelling. But at **any non-zero packet loss**, the relay delivers dramatically lower tail latency because FEC absorbs loss silently — no TCP retransmit delays.
+At baseline, the relay adds ~9ms (3.5%) for encryption + FEC + UDP tunnelling. But at **any non-zero packet loss**, the relay delivers dramatically lower tail latency because FEC absorbs loss silently - no TCP retransmit delays.
 
 > Relay latency is dead-flat at ~280ms whether there's 0% or 5% loss. Direct TCP p95 degrades linearly.
 
@@ -87,7 +87,7 @@ Full benchmark methodology and raw data: [BENCHMARK-RESULTS.md](BENCHMARK-RESULT
 
 ### Pre-built binaries
 
-Download from [GitHub Releases](https://github.com/Entrouter/entrouter-line/releases) — available for Linux (amd64/arm64), macOS (amd64/arm64), and Windows.
+Download from [GitHub Releases](https://github.com/Entrouter/entrouter-line/releases) - available for Linux (amd64/arm64), macOS (amd64/arm64), and Windows.
 
 ### Cargo
 
@@ -149,8 +149,8 @@ entrouter-line --config config.toml
 ```
 
 The admin API is available at `http://127.0.0.1:9090`:
-- `GET /health` — liveness check
-- `GET /status` — peer connections, latency matrix, routing table
+- `GET /health` - liveness check
+- `GET /status` - peer connections, latency matrix, routing table
 
 ---
 
@@ -188,7 +188,7 @@ flowchart LR
     style UDP fill:#e94560,stroke:#e94560,color:#fff
 ```
 
-Latency-mesh routing (Dijkstra on EWMA probe data) dynamically selects the fastest path between PoPs — not the BGP default.
+Latency-mesh routing (Dijkstra on EWMA probe data) dynamically selects the fastest path between PoPs - not the BGP default.
 
 ## Project Structure
 
@@ -240,7 +240,7 @@ cargo bench
 
 ## Security
 
-All inter-node traffic is encrypted with ChaCha20-Poly1305. Shared keys are pre-configured per peer — no PKI required for the relay mesh. Optional TLS termination is available at the edge.
+All inter-node traffic is encrypted with ChaCha20-Poly1305. Shared keys are pre-configured per peer - no PKI required for the relay mesh. Optional TLS termination is available at the edge.
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
@@ -250,6 +250,6 @@ Pull requests welcome. Please run `cargo test` and `cargo clippy` before submitt
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2025 Entrouter
+[MIT](LICENSE) - Copyright (c) 2025 Entrouter
 
 

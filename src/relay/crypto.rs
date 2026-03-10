@@ -9,7 +9,7 @@ use chacha20poly1305::{
 pub const KEY_SIZE: usize = 32;
 
 /// ChaCha20-Poly1305 AEAD cipher bound to a single pre-shared key.
-/// One instance per peer tunnel — nonces are derived from packet sequence numbers.
+/// One instance per peer tunnel - nonces are derived from packet sequence numbers.
 pub struct TunnelCrypto {
     cipher: ChaCha20Poly1305,
 }

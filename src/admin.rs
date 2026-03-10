@@ -1,4 +1,4 @@
-/// Admin HTTP endpoints — health, status, and metrics.
+/// Admin HTTP endpoints - health, status, and metrics.
 /// Lightweight axum server for monitoring and debugging.
 /// If admin_token is configured, /status requires `Authorization: Bearer <token>`.
 use std::sync::Arc;

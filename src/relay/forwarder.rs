@@ -1,4 +1,4 @@
-/// Packet forwarder — central routing engine for the relay mesh.
+/// Packet forwarder - central routing engine for the relay mesh.
 /// Receives packets from all tunnels, routes to destination or delivers locally.
 /// Supports multi-hop forwarding via mesh router's shortest-path algorithm.
 use std::sync::Arc;
@@ -43,7 +43,7 @@ impl std::fmt::Display for ForwarderError {
 }
 
 /// Central packet routing engine.
-/// Routes incoming tunnel traffic to its destination — either forwarding
+/// Routes incoming tunnel traffic to its destination - either forwarding
 /// to the next hop or delivering locally to the edge (TCP/QUIC).
 pub struct Forwarder {
     node_id: String,
@@ -113,7 +113,7 @@ impl Forwarder {
                         }
                     }
                 } else {
-                    // No FEC receiver for this peer — pass through directly
+                    // No FEC receiver for this peer - pass through directly
                     self.route_data(from_peer, &packet.payload).await;
                 }
             }
@@ -161,7 +161,7 @@ impl Forwarder {
     }
 
     /// Forward a relay payload to the next hop toward destination.
-    /// Buffers through FEC encoder — shards spawned as fire-and-forget when block is full.
+    /// Buffers through FEC encoder - shards spawned as fire-and-forget when block is full.
     async fn forward_to(
         &self,
         dest_node: &str,
@@ -190,7 +190,7 @@ impl Forwarder {
                 });
             }
         } else {
-            // No FEC sender — send directly
+            // No FEC sender - send directly
             tunnel
                 .send(wire::PACKET_DATA, relay_payload)
                 .await
@@ -200,7 +200,7 @@ impl Forwarder {
         Ok(())
     }
 
-    /// Run the main forwarding loop — receives from all peer receive loops.
+    /// Run the main forwarding loop - receives from all peer receive loops.
     /// Includes periodic FEC flush to send partial blocks.
     pub async fn run(self: Arc<Self>, mut rx: mpsc::Receiver<(String, ReceivedPacket)>) {
         info!(node = %self.node_id, "forwarder started (FEC: {}+{} shards)",

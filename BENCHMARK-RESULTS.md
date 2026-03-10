@@ -1,4 +1,4 @@
-# Entrouter Line — Benchmark Results
+# Entrouter Line - Benchmark Results
 
 **Date:** 2025-07-18  
 **Route:** London ↔ Sydney  
@@ -34,7 +34,7 @@
 | Full blast | ~140 Mbps | ~141 Mbps | 1.2–6% | 1.2–6% | **PASS** (expected) |
 
 > **Note:** TX saturates at ~140 Mbps due to VPS NIC/bandwidth cap, not relay code.
-> Full blast loss is expected at saturation — kernel UDP send buffers overflow.
+> Full blast loss is expected at saturation - kernel UDP send buffers overflow.
 
 ---
 
@@ -49,7 +49,7 @@ LON→SYD traffic is affected by London's egress netem. SYD→LON by Sydney's.
 
 | Netem Loss | LON TX (bytes) | SYD RX (bytes) | LON→SYD Loss | SYD TX (bytes) | LON RX (bytes) | SYD→LON Loss |
 |-----------|---------------|---------------|-------------|---------------|---------------|-------------|
-| 0% (baseline) | 174,698,496 | — | ~0% | 176,906,240 | — | ~0% |
+| 0% (baseline) | 174,698,496 | - | ~0% | 176,906,240 | - | ~0% |
 | 1% | 174,698,496 | 173,020,003 | **0.96%** | 176,906,240 | 175,157,231 | **0.99%** |
 | 5% | 174,637,056 | 165,838,480 | **5.04%** | 176,996,352 | 168,128,626 | **5.01%** |
 | 10% | 174,624,768 | 157,367,614 | **9.88%** | 176,951,296 | 159,197,819 | **10.03%** |
@@ -78,7 +78,7 @@ LON→SYD traffic is affected by London's egress netem. SYD→LON by Sydney's.
 
 > Goodput = received Mbps at the destination. Retention = goodput / baseline goodput.
 > The goodput drop exceeds the netem loss % because TCP-over-relay retransmissions
-> consume bandwidth — the relay faithfully delivers retransmitted segments too.
+> consume bandwidth - the relay faithfully delivers retransmitted segments too.
 
 ---
 
@@ -93,7 +93,7 @@ LON→SYD traffic is affected by London's egress netem. SYD→LON by Sydney's.
 
 Each 10 relay payloads are grouped into a FEC block. 4 parity shards are computed via Reed-Solomon
 erasure coding and transmitted alongside the data shards (14 shards total per block). The receiver
-can reconstruct the original 10 payloads from **any 10 of the 14 shards** — tolerating up to 4
+can reconstruct the original 10 payloads from **any 10 of the 14 shards** - tolerating up to 4
 lost shards per block. Partial blocks are flushed every 5ms to bound latency.
 
 ### Results
@@ -105,8 +105,8 @@ lost shards per block. Partial blocks are flushed every 5ms to bound latency.
 | 10% | 35.6 | 28.9 | 35.9 | 29.4 | 29.2 | **99%** |
 | 20% | 35.6 | 25.2 | 35.9 | 25.8 | 25.5 | **87%** |
 | 22% | 35.7 | 24.1 | 35.9 | 24.5 | 24.3 | **83%** |
-| 25% | — | FAIL | — | FAIL | — | **0%** |
-| 28% | — | FAIL | — | FAIL | — | **0%** |
+| 25% | - | FAIL | - | FAIL | - | **0%** |
+| 28% | - | FAIL | - | FAIL | - | **0%** |
 
 ### Analysis
 
@@ -143,7 +143,7 @@ operational limit at ~22–24% packet loss.
 ## 5. A/B Comparison: Relay vs Direct TCP
 
 **Date:** 2025-07-19  
-**Config:** `bench_relay_vs_direct.py` — same two nodes, same link, same loss conditions  
+**Config:** `bench_relay_vs_direct.py` - same two nodes, same link, same loss conditions  
 **Methodology:** For each loss level, latency is measured as 20 sequential round-trips (64-byte ping/pong) through the relay tunnel vs directly over TCP. Throughput is 20 sequential 512-byte round-trips. Loss is injected with `tc netem` on the remote node's egress.
 
 ### Latency
@@ -161,7 +161,7 @@ operational limit at ~22–24% packet loss.
 | **5%** | p50 | 279.7 | 272.8 | +6.9 |
 | | p95 | 280.2 | 1089.4 | −809.2 |
 
-### Throughput (20 × 512B sequential)
+### Throughput (20 �- 512B sequential)
 
 | Loss | Relay msg/s | Direct msg/s | Relay Delivery | Direct Delivery |
 |------|------------|-------------|---------------|----------------|
@@ -172,9 +172,9 @@ operational limit at ~22–24% packet loss.
 
 ### Key Findings
 
-1. **Relay adds ~9ms overhead at baseline** — the cost of encryption, FEC encoding, and UDP tunnelling over a ~271ms link. That's a 3.5% overhead.
+1. **Relay adds ~9ms overhead at baseline** - the cost of encryption, FEC encoding, and UDP tunnelling over a ~271ms link. That's a 3.5% overhead.
 2. **At 1% loss, relay p95 is 280ms vs direct TCP p95 of 758ms.** The relay's FEC absorbs packet loss silently, while TCP must detect the loss (via timeout or triple-dup ACK) and retransmit, adding a full RTT or more to tail latency.
-3. **Relay latency is dead-flat across all loss levels** — p50 stays at ~280ms whether there's 0% or 5% packet loss. Direct TCP tail latency degrades linearly with loss, reaching 1089ms p95 at 5%.
+3. **Relay latency is dead-flat across all loss levels** - p50 stays at ~280ms whether there's 0% or 5% packet loss. Direct TCP tail latency degrades linearly with loss, reaching 1089ms p95 at 5%.
 4. **Both achieve 100% message delivery** at all loss levels. TCP retransmits guarantee eventual delivery; the relay's FEC achieves the same without retransmission delays.
 
 > **Bottom line:** The relay trades +9ms constant overhead for immunity to loss-induced latency spikes. On any link with >0.5% packet loss, the relay delivers lower tail latency than raw TCP.
@@ -205,13 +205,13 @@ operational limit at ~22–24% packet loss.
 | Category | Result |
 |----------|--------|
 | Smoke test | **PASS** |
-| Throughput (50–500 Mbps) | **PASS** — saturates NIC at ~140 Mbps, 0% loss |
-| Loss resilience (1–20% netem, pre-FEC) | **PASS** — zero relay overhead, loss = netem only |
-| FEC recovery (0–10% loss) | **PASS** — 100% data recovery, zero throughput impact |
-| FEC recovery (20% loss) | **PASS** — 87% data delivery, matches theoretical prediction |
-| FEC recovery (≥25% loss) | **FAIL** — QUIC peer connection cannot sustain |
-| **Relay vs Direct TCP (0% loss)** | **+9ms overhead** (3.5%) — encryption + FEC + UDP tunnel |
-| **Relay vs Direct TCP (1% loss)** | **Relay wins** — p95 280ms vs 758ms (relay absorbs loss via FEC) |
-| **Relay vs Direct TCP (5% loss)** | **Relay wins** — p95 280ms vs 1089ms (dead-flat vs degrading) |
-| Encryption overhead | **Negligible** — no measurable throughput impact |
+| Throughput (50–500 Mbps) | **PASS** - saturates NIC at ~140 Mbps, 0% loss |
+| Loss resilience (1–20% netem, pre-FEC) | **PASS** - zero relay overhead, loss = netem only |
+| FEC recovery (0–10% loss) | **PASS** - 100% data recovery, zero throughput impact |
+| FEC recovery (20% loss) | **PASS** - 87% data delivery, matches theoretical prediction |
+| FEC recovery (≥25% loss) | **FAIL** - QUIC peer connection cannot sustain |
+| **Relay vs Direct TCP (0% loss)** | **+9ms overhead** (3.5%) - encryption + FEC + UDP tunnel |
+| **Relay vs Direct TCP (1% loss)** | **Relay wins** - p95 280ms vs 758ms (relay absorbs loss via FEC) |
+| **Relay vs Direct TCP (5% loss)** | **Relay wins** - p95 280ms vs 1089ms (dead-flat vs degrading) |
+| Encryption overhead | **Negligible** - no measurable throughput impact |
 | Cross-region RTT | ~271ms (London ↔ Sydney) |

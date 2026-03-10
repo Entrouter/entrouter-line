@@ -416,10 +416,10 @@ can_netem = apply_netem(node_b, 1)
 clear_netem(node_b)
 if can_netem:
     loss_levels = [0, 1, 3, 5]
-    print("[*] tc netem available — will test loss levels: 0%, 1%, 3%, 5%")
+    print("[*] tc netem available - will test loss levels: 0%, 1%, 3%, 5%")
 else:
     loss_levels = [0]
-    print("[!] tc netem NOT available — baseline only (no simulated loss)")
+    print("[!] tc netem NOT available - baseline only (no simulated loss)")
 
 results = []
 
@@ -478,7 +478,7 @@ for loss_pct in loss_levels:
 
     # --- THROUGHPUT: RELAY ---
     print("  [*] Throughput test: RELAY (20 x 512B sequential)")
-    # Need fresh relay connections — restart relays again for clean flow IDs
+    # Need fresh relay connections - restart relays again for clean flow IDs
     print("    Restarting relays for throughput...")
     restart_relays(node_a, node_b)
     if loss_pct > 0:

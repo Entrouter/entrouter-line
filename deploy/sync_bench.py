@@ -65,7 +65,7 @@ def main():
         return
     sock.settimeout(30)
 
-    print(f"[{args.role}] peer READY received — starting benchmark")
+    print(f"[{args.role}] peer READY received - starting benchmark")
     # Any leftover data after READY\n is the start of benchmark data
     leftover = buf.split(b"READY\n", 1)[1]
 

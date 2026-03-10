@@ -166,7 +166,7 @@ pub fn make_server_config() -> quinn::ServerConfig {
     tls_config.alpn_protocols = vec![b"entrouter".to_vec()];
     // Enable TLS 0-RTT for returning clients.  Replay attacks on 0-RTT data
     // are safe here because the tunnel layer encrypts every packet with a
-    // unique per-sequence nonce — replayed TLS early-data would decrypt to
+    // unique per-sequence nonce - replayed TLS early-data would decrypt to
     // duplicate tunnel packets that the receiver naturally deduplicates.
     tls_config.max_early_data_size = u32::MAX;
 
