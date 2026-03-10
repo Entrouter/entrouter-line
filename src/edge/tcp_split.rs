@@ -51,7 +51,11 @@ impl TcpSplitter {
 
     /// Start accepting TCP connections
     pub async fn listen(self: Arc<Self>, listener: TcpListener) {
-        let tls_label = if self.tls_acceptor.is_some() { " (TLS)" } else { "" };
+        let tls_label = if self.tls_acceptor.is_some() {
+            " (TLS)"
+        } else {
+            ""
+        };
         let addr = listener
             .local_addr()
             .map(|a| a.to_string())

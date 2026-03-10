@@ -251,16 +251,25 @@ mod tests {
 
     #[test]
     fn overhead_calculation() {
-        let c = FecConfig { data_shards: 10, parity_shards: 2 };
+        let c = FecConfig {
+            data_shards: 10,
+            parity_shards: 2,
+        };
         assert!((c.overhead() - 0.2).abs() < f64::EPSILON);
 
-        let c2 = FecConfig { data_shards: 6, parity_shards: 4 };
+        let c2 = FecConfig {
+            data_shards: 6,
+            parity_shards: 4,
+        };
         assert!((c2.overhead() - 4.0 / 6.0).abs() < f64::EPSILON);
     }
 
     #[test]
     fn total_shards() {
-        let c = FecConfig { data_shards: 10, parity_shards: 4 };
+        let c = FecConfig {
+            data_shards: 10,
+            parity_shards: 4,
+        };
         assert_eq!(c.total_shards(), 14);
     }
 

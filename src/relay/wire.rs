@@ -59,7 +59,13 @@ mod tests {
 
     #[test]
     fn all_packet_types() {
-        for ptype in [PACKET_DATA, PACKET_PARITY, PACKET_PING, PACKET_PONG, PACKET_CONTROL] {
+        for ptype in [
+            PACKET_DATA,
+            PACKET_PARITY,
+            PACKET_PING,
+            PACKET_PONG,
+            PACKET_CONTROL,
+        ] {
             let mut buf = [0u8; HEADER_SIZE];
             encode_header(&mut buf, ptype, 0, 0);
             let (decoded_type, _, _) = decode_header(&buf);

@@ -31,16 +31,15 @@ pub struct AdminState {
 pub fn admin_router(state: Arc<AdminState>) -> Router {
     let health_route = Router::new().route("/health", get(health));
 
-    let status_route = Router::new()
-        .route("/status", get(status))
-        .layer(middleware::from_fn_with_state(
-            Arc::clone(&state),
-            auth_middleware,
-        ));
+    let status_route =
+        Router::new()
+            .route("/status", get(status))
+            .layer(middleware::from_fn_with_state(
+                Arc::clone(&state),
+                auth_middleware,
+            ));
 
-    health_route
-        .merge(status_route)
-        .with_state(state)
+    health_route.merge(status_route).with_state(state)
 }
 
 async fn auth_middleware(
@@ -120,7 +119,10 @@ mod tests {
             router,
             prober,
             tx,
-            FecConfig { data_shards: 10, parity_shards: 4 },
+            FecConfig {
+                data_shards: 10,
+                parity_shards: 4,
+            },
         ));
         let tcp = Arc::new(TcpSplitter::new(Arc::clone(&fwd), "peer".into()));
         let quic = Arc::new(QuicAcceptor::new(Arc::clone(&fwd), "peer".into()));

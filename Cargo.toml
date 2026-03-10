@@ -2,7 +2,7 @@
 name = "entrouter-line"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.87"
 description = "Zero-loss cross-region packet relay network"
 license = "MIT"
 repository = "https://github.com/Entrouter/entrouter-line"

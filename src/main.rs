@@ -29,8 +29,7 @@ fn load_tls_config(
     let cert_data = std::fs::read(cert_path)?;
     let key_data = std::fs::read(key_path)?;
 
-    let certs: Vec<_> = rustls_pemfile::certs(&mut &cert_data[..])
-        .collect::<Result<_, _>>()?;
+    let certs: Vec<_> = rustls_pemfile::certs(&mut &cert_data[..]).collect::<Result<_, _>>()?;
 
     let key = rustls_pemfile::private_key(&mut &key_data[..])?
         .ok_or("no private key found in TLS key file")?;
@@ -152,10 +151,8 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- TCP edge ---
     let tcp_listener = TcpListener::bind(config.listen.tcp_addr).await?;
-    let mut tcp_splitter_inner = TcpSplitter::new(
-        Arc::clone(&forwarder),
-        config.relay.default_dest.clone(),
-    );
+    let mut tcp_splitter_inner =
+        TcpSplitter::new(Arc::clone(&forwarder), config.relay.default_dest.clone());
 
     // Wrap with TLS if configured
     if let (Some(cert_path), Some(key_path)) =
