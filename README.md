@@ -1,6 +1,6 @@
 # Entrouter Line
 
-[![Build](https://github.com/joarkee-debug/entrouter-line/actions/workflows/ci.yml/badge.svg)](https://github.com/joarkee-debug/entrouter-line/actions/workflows/ci.yml)
+[![Build](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml/badge.svg)](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.94+-orange.svg)](https://www.rust-lang.org)
 
