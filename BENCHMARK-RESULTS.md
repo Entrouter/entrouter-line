@@ -1,7 +1,7 @@
 # Entrouter Line — Benchmark Results
 
 **Date:** 2025-07-18  
-**Route:** London (YOUR_LONDON_IP) ↔ Sydney (YOUR_SYDNEY_IP)  
+**Route:** London ↔ Sydney  
 **RTT:** ~273ms  
 **Binary:** Rust 1.94.0, release profile (opt-level 3, LTO fat, codegen-units 1, strip, panic=abort)  
 **Encryption:** ChaCha20-Poly1305 (32-byte PSK)  
