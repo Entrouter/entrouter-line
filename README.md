@@ -14,11 +14,57 @@ Adaptive FEC, encrypted UDP tunnels, real-time latency-mesh routing, and QUIC 0-
 
 ---
 
+## Who This Is For
+
+- **Gaming networks** - eliminate tail latency spikes from packet loss on intercontinental player routes
+- **Financial trading** - consistent sub-millisecond cross-region transport despite lossy links
+- **Live video/VoIP** - FEC silently recovers loss so TCP retransmits never fire
+- **CDN and proxy infrastructure** - reliable backhaul between PoPs, especially over degraded or third-world ISP links
+- **Cross-ocean backbone** - long-haul routes with 5-10% loss become invisible to your application
+- **Any TCP workload crossing unreliable links** - the relay is transparent to your application; just point TCP at the edge
+
+---
+
+## Key Features
+
+| Feature | Detail |
+|---------|--------|
+| **Adaptive FEC** | Reed-Solomon forward error correction auto-tunes parity overhead from 5% to 67% based on measured loss rate |
+| **Multi-hop mesh routing** | Real-time Dijkstra shortest-path over live latency data, not static BGP. Traffic traverses multiple PoPs on the optimal path. |
+| **TCP splitting** | Edge nodes locally ACK client connections and relay through the mesh, masking round-trip latency from the client |
+| **QUIC 0-RTT edge** | Clients connect via QUIC with zero round-trip handshakes for returning connections |
+| **ChaCha20-Poly1305 tunnels** | All inter-node traffic encrypted with AEAD. Pre-shared keys, no PKI required. |
+| **Optional TLS at edge** | TCP edge connections can be TLS-wrapped with your own certs |
+| **Live latency matrix** | Continuous PING/PONG probing (default 500ms) with EWMA smoothing, feeds the routing engine in real time |
+| **Admin API** | HTTP health check and full status endpoint (peer count, active flows, latency matrix, routes) with optional bearer token auth |
+| **Zero overhead** | Encryption, FEC, headers, and forwarding add zero measurable packet loss at any tested loss level |
+
+---
+
+## What This Is Not
+
+- **Not a VPN** - no IP encapsulation, no TUN/TAP, no per-user isolation
+- **Not a SOCKS or HTTP proxy** - no proxy protocol; raw TCP/QUIC edge only
+- **Not a CDN** - no content caching; pure packet relay with loss recovery
+- **Not UDP passthrough** - edge accepts TCP and QUIC only (the relay layer uses UDP internally but does not expose it to clients)
+
+If you are looking for a transparent relay fabric that sits between your existing TCP services and makes lossy links invisible, this is it.
+
+---
+
 ## What This Does
 
 Relays packets between globally distributed PoP (Point of Presence) nodes with:
 
-- **Zero packet loss up to 10% link loss** - adaptive Reed-Solomon FEC absorbs all loss with zero throughput impact
+- **Zero packet loss up to 10% link loss** - adaptive Reed-Solomon FEC absorbs all loss with zero throughput impact. Auto-tunes based on observed loss:
+
+  | Measured Loss | Data Shards | Parity Shards | Overhead |
+  |---------------|------------|---------------|----------|
+  | < 0.5% | 20 | 1 | ~5% |
+  | 0.5 - 1% | 10 | 2 | ~20% |
+  | 1 - 3% | 10 | 4 | ~40% |
+  | 3 - 5% | 8 | 4 | ~50% |
+  | 5%+ | 6 | 4 | ~67% |
 - **Zero relay overhead** - measured loss exactly matches simulated network loss, the relay adds nothing
 - **Optimal routing** via real-time latency mesh with Dijkstra shortest-path (not BGP)
 - **Instant connections** via QUIC 0-RTT + TCP splitting at edge
@@ -149,8 +195,16 @@ entrouter-line --config config.toml
 ```
 
 The admin API is available at `http://127.0.0.1:9090`:
-- `GET /health` - liveness check
-- `GET /status` - peer connections, latency matrix, routing table
+- `GET /health` - liveness check (no auth required)
+- `GET /status` - JSON with node ID, region, peer count, active TCP/QUIC flow counts, full latency matrix, and routing paths
+
+Optional bearer token auth for `/status`:
+```toml
+admin_token = "your-secret-token"
+```
+```bash
+curl -H "Authorization: Bearer your-secret-token" http://127.0.0.1:9090/status
+```
 
 ---
 
@@ -250,6 +304,6 @@ Pull requests welcome. Please run `cargo test` and `cargo clippy` before submitt
 
 ## License
 
-[Apache 2.0](LICENSE) - Copyright (c) 2025 Entrouter
+[Apache 2.0](LICENSE) - Copyright (c) 2026 Entrouter
 
 
