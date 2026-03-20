@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml/badge.svg)](https://github.com/Entrouter/entrouter-line/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/entrouter-line.svg)](https://crates.io/crates/entrouter-line)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.87+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/Tests-69%20passing-brightgreen.svg)]()
 
@@ -250,6 +250,6 @@ Pull requests welcome. Please run `cargo test` and `cargo clippy` before submitt
 
 ## License
 
-[MIT](LICENSE) - Copyright (c) 2025 Entrouter
+[Apache 2.0](LICENSE) - Copyright (c) 2025 Entrouter
 
 

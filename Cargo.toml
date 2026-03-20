@@ -1,10 +1,10 @@
 [package]
 name = "entrouter-line"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.87"
 description = "Zero-loss cross-region packet relay network"
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/Entrouter/entrouter-line"
 readme = "README.md"
 keywords = ["relay", "fec", "networking", "udp", "latency"]
